@@ -9,69 +9,145 @@ import Foundation
 import AVFoundation
 import AppKit
 
+// Добавляем имя уведомления
+extension Notification.Name {
+    static let recordingStateChanged = Notification.Name("recordingStateChanged")
+}
+
 class VoiceRecorder: NSObject, ObservableObject {
-    @Published var isRecording = false
+    @Published var isRecording = false {
+        didSet {
+            // Уведомляем AppDelegate об изменении состояния
+            NotificationCenter.default.post(name: .recordingStateChanged, object: nil)
+        }
+    }
     @Published var isProcessing = false
     
     private var audioRecorder: AVAudioRecorder?
     private let speechManager = SpeechManager()
+    private var microphonePermissionGranted: Bool = false
     
     override init() {
         super.init()
-        setupAudioSession()
+        requestMicrophonePermissionIfNeeded()
     }
     
-    private func setupAudioSession() {
-        // На macOS AVAudioSession не используется, поэтому пропускаем эту настройку
-        // AVAudioSession доступен только на iOS
+    private func requestMicrophonePermissionIfNeeded() {
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            microphonePermissionGranted = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    self?.microphonePermissionGranted = granted
+                    if !granted {
+                        self?.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
+                    }
+                }
+            }
+        case .denied, .restricted:
+            microphonePermissionGranted = false
+            showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
+        @unknown default:
+            microphonePermissionGranted = false
+        }
     }
     
     func startRecording() {
+        // Проверяем разрешение на микрофон
+        AVCaptureDevice.requestAccess(for: .audio) { _ in
+            switch AVCaptureDevice.authorizationStatus(for: .audio) {
+            case .authorized:
+                self.startActualRecording()
+            case .notDetermined:
+                AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                    DispatchQueue.main.async {
+                        if granted {
+                            self?.startActualRecording()
+                        } else {
+                            self?.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
+                        }
+                    }
+                }
+            case .denied, .restricted:
+                self.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
+            @unknown default:
+                self.showError("Неизвестная ошибка доступа к микрофону.")
+            }
+        }
+        
+    }
+    
+    private func startActualRecording() {
         guard !isRecording else { return }
         
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let audioFilename = documentsPath.appendingPathComponent("voice_input.m4a")
+        let audioFilename = documentsPath.appendingPathComponent("voice_input.wav")
+        print("[VoiceRecorder] Попытка начать запись: \(audioFilename.path)")
         
         let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
             AVSampleRateKey: 44100,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsNonInterleaved: false,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false
         ]
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
-            audioRecorder?.delegate = self
-            audioRecorder?.record()
-            
+            print("[VoiceRecorder] AVAudioRecorder создан: \(audioRecorder != nil)")
+            let started = audioRecorder?.record() ?? false
+            print("[VoiceRecorder] .record() -> \(started)")
+            if !started {
+                print("[VoiceRecorder] AVAudioRecorder не смог начать запись. isRecording: \(audioRecorder?.isRecording ?? false)")
+                showError("Ошибка: не удалось начать запись. Проверьте разрешения и настройки.")
+                return
+            }
             isRecording = true
-            
-            // Показываем индикатор записи
             showRecordingIndicator()
-            
         } catch {
-            print("Ошибка начала записи: \(error)")
+            print("[VoiceRecorder] Ошибка создания AVAudioRecorder: \(error)")
+            showError("Ошибка создания AVAudioRecorder: \(error.localizedDescription)")
+            return
         }
     }
     
     func stopRecording() {
         guard isRecording else { return }
-        
         audioRecorder?.stop()
         isRecording = false
-        
-        // Скрываем индикатор записи
         hideRecordingIndicator()
-        
+        // Проверяем файл после записи
+        let audioFilename = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("voice_input.wav")
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: audioFilename.path) {
+            do {
+                let attrs = try fileManager.attributesOfItem(atPath: audioFilename.path)
+                let fileSize = attrs[.size] as? UInt64 ?? 0
+                print("[VoiceRecorder] Файл записан: \(audioFilename.path), размер: \(fileSize) байт")
+                if fileSize == 0 {
+                    print("[VoiceRecorder] ВНИМАНИЕ: файл пустой!")
+                    showError("Ошибка: записанный файл пустой. Проверьте микрофон и разрешения.")
+                }
+            } catch {
+                print("[VoiceRecorder] Ошибка получения атрибутов файла: \(error)")
+            }
+        } else {
+            print("[VoiceRecorder] Файл не найден после записи: \(audioFilename.path)")
+            showError("Ошибка: файл не найден после записи.")
+        }
         // Начинаем обработку
         processRecording()
     }
     
     private func processRecording() {
+        print("[VoiceRecorder] Вызван processRecording")
         isProcessing = true
         
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let audioFile = documentsPath.appendingPathComponent("voice_input.m4a")
+        let audioFile = documentsPath.appendingPathComponent("voice_input.wav")
         
         speechManager.transcribeAudio(fileURL: audioFile) { [weak self] result in
             DispatchQueue.main.async {
@@ -79,38 +155,17 @@ class VoiceRecorder: NSObject, ObservableObject {
                 
                 switch result {
                 case .success(let text):
-                    self?.insertText(text)
+                    print("[VoiceRecorder] Результат распознавания: \(text)")
+                    // Вставка текста теперь происходит в SpeechManager
+                    // Показываем уведомление об успешной вставке
+                    let notification = NSUserNotification()
+                    notification.title = "Voice Input"
+                    notification.informativeText = "Текст вставлен: \(text.prefix(50))..."
+                    NSUserNotificationCenter.default.deliver(notification)
                 case .failure(let error):
+                    print("[VoiceRecorder] Ошибка распознавания: \(error.localizedDescription)")
                     self?.showError("Ошибка распознавания: \(error.localizedDescription)")
                 }
-            }
-        }
-    }
-    
-    private func insertText(_ text: String) {
-        // Экранируем специальные символы для AppleScript
-        let escapedText = text.replacingOccurrences(of: "\"", with: "\\\"")
-            .replacingOccurrences(of: "\\", with: "\\\\")
-        
-        // Создаем AppleScript для вставки текста
-        let script = """
-        tell application "System Events"
-            keystroke "\(escapedText)"
-        end tell
-        """
-        
-        if let scriptObject = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            scriptObject.executeAndReturnError(&error)
-            
-            if let error = error {
-                showError("Ошибка вставки текста: \(error)")
-            } else {
-                // Показываем уведомление об успешной вставке
-                let notification = NSUserNotification()
-                notification.title = "Voice Input"
-                notification.informativeText = "Текст вставлен: \(text.prefix(50))..."
-                NSUserNotificationCenter.default.deliver(notification)
             }
         }
     }

@@ -22,10 +22,11 @@ struct WhiteNoiseApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var voiceRecorder: VoiceRecorder?
+    var settingsWindow: NSWindow?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Скрываем приложение из Dock
-        NSApp.setActivationPolicy(.accessory)
+        // Не скрываем приложение из Dock, чтобы окно отображалось
+        // NSApp.setActivationPolicy(.accessory)
         
         // Создаем иконку в меню
         setupStatusBar()
@@ -35,6 +36,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         // Регистрируем глобальный шорткат
         registerGlobalShortcut()
+        
+        // Показываем окно настроек при первом запуске
+        showSettingsOnFirstLaunch()
+        
+        // Подписываемся на уведомления об изменении состояния записи
+        NotificationCenter.default.addObserver(self, selector: #selector(recordingStateChanged), name: .recordingStateChanged, object: nil)
+    }
+    
+    func showSettingsOnFirstLaunch() {
+        let hasLaunchedKey = "HasLaunchedBefore"
+        let launched = UserDefaults.standard.bool(forKey: hasLaunchedKey)
+        if !launched {
+            openSettings()
+            UserDefaults.standard.set(true, forKey: hasLaunchedKey)
+        }
     }
     
     func setupStatusBar() {
@@ -46,8 +62,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
         }
         
+        updateMenu()
+    }
+    
+    func updateMenu() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Начать запись", action: #selector(startRecording), keyEquivalent: "r"))
+        
+        if voiceRecorder?.isRecording == true {
+            menu.addItem(NSMenuItem(title: "Остановить запись", action: #selector(stopRecording), keyEquivalent: "r"))
+        } else {
+            menu.addItem(NSMenuItem(title: "Начать запись", action: #selector(startRecording), keyEquivalent: "r"))
+        }
+        
         menu.addItem(NSMenuItem(title: "Настройки", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Выход", action: #selector(quit), keyEquivalent: "q"))
@@ -56,10 +82,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func registerGlobalShortcut() {
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             // Cmd + Shift + V для активации голосового ввода
             if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 9 { // 9 = V
-                self.startRecording()
+                DispatchQueue.main.async {
+                    self?.toggleRecording()
+                }
             }
         }
     }
@@ -75,24 +103,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func startRecording() {
         voiceRecorder?.startRecording()
         updateStatusBarIcon(recording: true)
+        updateMenu()
     }
     
     @objc func stopRecording() {
         voiceRecorder?.stopRecording()
         updateStatusBarIcon(recording: false)
+        updateMenu()
+    }
+    
+    @objc func recordingStateChanged() {
+        DispatchQueue.main.async {
+            self.updateMenu()
+            self.updateStatusBarIcon(recording: self.voiceRecorder?.isRecording == true)
+        }
     }
     
     @objc func openSettings() {
         // Показать окно настроек
-        let settingsWindow = NSWindow(
+        if let window = settingsWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        settingsWindow.title = "Настройки Voice Input"
-        settingsWindow.contentView = NSHostingView(rootView: SettingsView())
-        settingsWindow.makeKeyAndOrderFront(nil)
+        window.title = "Настройки Voice Input"
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        settingsWindow = window
     }
     
     @objc func quit() {
