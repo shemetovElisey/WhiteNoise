@@ -33,19 +33,43 @@ class LocalSpeechRecognizer {
     private func convertToWAV(from audioURL: URL, completion: @escaping (Result<URL, Error>) -> Void) {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let wavURL = documentsPath.appendingPathComponent("temp_audio.wav")
-        
-        let asset = AVAsset(url: audioURL)
-        let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough)
-        
-        exportSession?.outputURL = wavURL
-        exportSession?.outputFileType = .wav
-        
-        exportSession?.exportAsynchronously {
-            DispatchQueue.main.async {
-                if exportSession?.status == .completed {
-                    completion(.success(wavURL))
-                } else {
-                    completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+
+        // Используем AVURLAsset вместо AVAsset
+        let asset = AVURLAsset(url: audioURL)
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetPassthrough) else {
+            completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+            return
+        }
+        exportSession.outputURL = wavURL
+        exportSession.outputFileType = .wav
+
+        if #available(macOS 15.0, *) {
+            // Новый способ: отслеживаем состояния через states(updateInterval:)
+            let _ = exportSession.states(updateInterval: 0.1) { states in
+                if let last = states.last {
+                    switch last {
+                    case .completed:
+                        DispatchQueue.main.async {
+                            completion(.success(wavURL))
+                        }
+                    case .failed, .cancelled:
+                        DispatchQueue.main.async {
+                            completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+                        }
+                    default:
+                        break
+                    }
+                }
+            }
+        } else {
+            // Старый способ для совместимости
+            exportSession.exportAsynchronously {
+                DispatchQueue.main.async {
+                    if exportSession.status == .completed {
+                        completion(.success(wavURL))
+                    } else {
+                        completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+                    }
                 }
             }
         }
