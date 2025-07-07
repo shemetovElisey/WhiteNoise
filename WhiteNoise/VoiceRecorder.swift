@@ -8,6 +8,7 @@
 import Foundation
 import AVFoundation
 import AppKit
+import UserNotifications
 
 // Добавляем имя уведомления
 extension Notification.Name {
@@ -145,23 +146,15 @@ class VoiceRecorder: NSObject, ObservableObject {
     private func processRecording() {
         print("[VoiceRecorder] Вызван processRecording")
         isProcessing = true
-        
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let audioFile = documentsPath.appendingPathComponent("voice_input.wav")
-        
         speechManager.transcribeAudio(fileURL: audioFile) { [weak self] result in
             DispatchQueue.main.async {
                 self?.isProcessing = false
-                
                 switch result {
                 case .success(let text):
                     print("[VoiceRecorder] Результат распознавания: \(text)")
-                    // Вставка текста теперь происходит в SpeechManager
-                    // Показываем уведомление об успешной вставке
-                    let notification = NSUserNotification()
-                    notification.title = "Voice Input"
-                    notification.informativeText = "Текст вставлен: \(text.prefix(50))..."
-                    NSUserNotificationCenter.default.deliver(notification)
+                    self?.showNotification(title: "Voice Input", message: "Текст скопирован в буфер обмена: \(text.prefix(50))...")
                 case .failure(let error):
                     print("[VoiceRecorder] Ошибка распознавания: \(error.localizedDescription)")
                     self?.showError("Ошибка распознавания: \(error.localizedDescription)")
@@ -170,28 +163,25 @@ class VoiceRecorder: NSObject, ObservableObject {
         }
     }
     
+    private func showNotification(title: String, message: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = message
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
     private func showRecordingIndicator() {
-        // Показываем уведомление о начале записи
-        let notification = NSUserNotification()
-        notification.title = "Voice Input"
-        notification.informativeText = "Запись началась... Говорите!"
-        notification.soundName = NSUserNotificationDefaultSoundName
-        NSUserNotificationCenter.default.deliver(notification)
+        self.showNotification(title: "Voice Input", message: "Запись началась... Говорите!")
     }
     
     private func hideRecordingIndicator() {
-        // Показываем уведомление о завершении записи
-        let notification = NSUserNotification()
-        notification.title = "Voice Input"
-        notification.informativeText = "Запись завершена. Обрабатываем..."
-        NSUserNotificationCenter.default.deliver(notification)
+        self.showNotification(title: "Voice Input", message: "Запись завершена. Обрабатываем...")
     }
     
     private func showError(_ message: String) {
-        let notification = NSUserNotification()
-        notification.title = "Voice Input - Ошибка"
-        notification.informativeText = message
-        NSUserNotificationCenter.default.deliver(notification)
+        self.showNotification(title: "Voice Input - Ошибка", message: message)
     }
 }
 

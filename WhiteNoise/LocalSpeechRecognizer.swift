@@ -9,8 +9,6 @@ import Foundation
 import AVFoundation
 
 class LocalSpeechRecognizer {
-    private var whisperContext: OpaquePointer?
-    
     init() {
         // Больше не кэшируем путь к модели
     }
@@ -66,69 +64,71 @@ class LocalSpeechRecognizer {
         print("[LocalSpeechRecognizer] Конвертация в WAV: \(wavURL.path)")
 
         let asset = AVURLAsset(url: audioURL)
-        guard let track = asset.tracks(withMediaType: .audio).first else {
-            print("[LocalSpeechRecognizer] Нет аудиотреков в файле: \(audioURL.path)")
-            completion(.failure(LocalSpeechRecognizerError.conversionFailed))
-            return
-        }
-
-        let outputSettings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatLinearPCM,
-            AVSampleRateKey: 44100,
-            AVNumberOfChannelsKey: 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsNonInterleaved: false,
-            AVLinearPCMIsFloatKey: false,
-            AVLinearPCMIsBigEndianKey: false
-        ]
-
-        do {
-            let reader = try AVAssetReader(asset: asset)
-            let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: outputSettings)
-            reader.add(readerOutput)
-
-            let writer = try AVAssetWriter(outputURL: wavURL, fileType: .wav)
-            let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings)
-            writer.add(writerInput)
-
-            writer.startWriting()
-            writer.startSession(atSourceTime: .zero)
-            let readerStarted = reader.startReading()
-            print("[LocalSpeechRecognizer] reader.startReading() -> \(readerStarted), status: \(reader.status.rawValue)")
-            if !readerStarted {
-                print("[LocalSpeechRecognizer] reader.error: \(String(describing: reader.error))")
+        asset.loadTracks(withMediaType: .audio) { tracks, error in
+            guard let track = tracks?.first else {
+                print("[LocalSpeechRecognizer] Нет аудиотреков в файле: \(audioURL.path)")
                 completion(.failure(LocalSpeechRecognizerError.conversionFailed))
                 return
             }
 
-            let inputQueue = DispatchQueue(label: "audioInputQueue")
-            writerInput.requestMediaDataWhenReady(on: inputQueue) {
-                while writerInput.isReadyForMoreMediaData {
-                    if reader.status == .failed || reader.status == .completed {
-                        print("[LocalSpeechRecognizer] reader.status: \(reader.status.rawValue), error: \(String(describing: reader.error))")
-                        break
-                    }
-                    if let sampleBuffer = readerOutput.copyNextSampleBuffer() {
-                        writerInput.append(sampleBuffer)
-                    } else {
-                        writerInput.markAsFinished()
-                        writer.finishWriting {
-                            defer { try? FileManager.default.removeItem(at: wavURL) }
-                            if writer.status == .completed {
-                                print("[LocalSpeechRecognizer] Конвертация завершена: \(wavURL.path)")
-                                completion(.success(wavURL))
-                            } else {
-                                print("[LocalSpeechRecognizer] Ошибка завершения writer: \(String(describing: writer.error))")
-                                completion(.failure(LocalSpeechRecognizerError.conversionFailed))
-                            }
+            let outputSettings: [String: Any] = [
+                AVFormatIDKey: kAudioFormatLinearPCM,
+                AVSampleRateKey: 44100,
+                AVNumberOfChannelsKey: 1,
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsNonInterleaved: false,
+                AVLinearPCMIsFloatKey: false,
+                AVLinearPCMIsBigEndianKey: false
+            ]
+
+            do {
+                let reader = try AVAssetReader(asset: asset)
+                let readerOutput = AVAssetReaderTrackOutput(track: track, outputSettings: outputSettings)
+                reader.add(readerOutput)
+
+                let writer = try AVAssetWriter(outputURL: wavURL, fileType: .wav)
+                let writerInput = AVAssetWriterInput(mediaType: .audio, outputSettings: outputSettings)
+                writer.add(writerInput)
+
+                writer.startWriting()
+                writer.startSession(atSourceTime: .zero)
+                let readerStarted = reader.startReading()
+                print("[LocalSpeechRecognizer] reader.startReading() -> \(readerStarted), status: \(reader.status.rawValue)")
+                if !readerStarted {
+                    print("[LocalSpeechRecognizer] reader.error: \(String(describing: reader.error))")
+                    completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+                    return
+                }
+
+                let inputQueue = DispatchQueue(label: "audioInputQueue")
+                writerInput.requestMediaDataWhenReady(on: inputQueue) {
+                    while writerInput.isReadyForMoreMediaData {
+                        if reader.status == .failed || reader.status == .completed {
+                            print("[LocalSpeechRecognizer] reader.status: \(reader.status.rawValue), error: \(String(describing: reader.error))")
+                            break
                         }
-                        break
+                        if let sampleBuffer = readerOutput.copyNextSampleBuffer() {
+                            writerInput.append(sampleBuffer)
+                        } else {
+                            writerInput.markAsFinished()
+                            writer.finishWriting {
+                                defer { try? FileManager.default.removeItem(at: wavURL) }
+                                if writer.status == .completed {
+                                    print("[LocalSpeechRecognizer] Конвертация завершена: \(wavURL.path)")
+                                    completion(.success(wavURL))
+                                } else {
+                                    print("[LocalSpeechRecognizer] Ошибка завершения writer: \(String(describing: writer.error))")
+                                    completion(.failure(LocalSpeechRecognizerError.conversionFailed))
+                                }
+                            }
+                            break
+                        }
                     }
                 }
+            } catch {
+                print("[LocalSpeechRecognizer] Ошибка конвертации: \(error)")
+                completion(.failure(error))
             }
-        } catch {
-            print("[LocalSpeechRecognizer] Ошибка конвертации: \(error)")
-            completion(.failure(error))
         }
     }
     
@@ -250,13 +250,6 @@ class LocalSpeechRecognizer {
         }
         
         return result
-    }
-    
-    deinit {
-        // Освобождаем ресурсы Whisper
-        if let context = whisperContext {
-            // whisper_free(context)
-        }
     }
 }
 
