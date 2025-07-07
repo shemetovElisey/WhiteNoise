@@ -152,11 +152,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         setupCarbonEventHandler()
         
         print("[AppDelegate] Шорткаты зарегистрированы. Используйте меню в строке состояния как альтернативу.")
-        
-        // Показываем уведомление о готовности
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.showNotification(title: "WhiteNoise", message: "Приложение готово! Используйте Cmd+Shift+V или меню в строке состояния.")
-        }
     }
     
     func registerLocalShortcut() {
