@@ -11,6 +11,7 @@ struct SettingsView: View {
     @StateObject private var modelManager = WhisperModelManager()
     @State private var showingModelDetails = false
     @State private var selectedModelForDetails: WhisperModel?
+    @State private var showingLogsView = false
     private let speechManager = SpeechManager()
     
     var body: some View {
@@ -120,6 +121,23 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 }
+                
+                // Системные логи
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Системные логи")
+                        .font(.headline)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Просматривайте и экспортируйте системные логи для диагностики проблем")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button("Открыть логи") {
+                            showingLogsView = true
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
             }
             .padding()
         }
@@ -130,6 +148,10 @@ struct SettingsView: View {
         .sheet(isPresented: $showingModelDetails) {
             ModelSelectionView(modelManager: modelManager)
                 .frame(minWidth: 500, minHeight: 400)
+        }
+        .sheet(isPresented: $showingLogsView) {
+            LogsView()
+                .frame(minWidth: 600, minHeight: 400)
         }
     }
 }

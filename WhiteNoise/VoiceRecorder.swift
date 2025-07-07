@@ -30,6 +30,7 @@ class VoiceRecorder: NSObject, ObservableObject {
     
     override init() {
         super.init()
+        LogManager.shared.info("VoiceRecorder инициализирован", component: "VoiceRecorder")
         requestMicrophonePermissionIfNeeded()
     }
     
@@ -37,54 +38,71 @@ class VoiceRecorder: NSObject, ObservableObject {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
             microphonePermissionGranted = true
+            LogManager.shared.info("Разрешение на микрофон уже предоставлено", component: "VoiceRecorder")
         case .notDetermined:
+            LogManager.shared.info("Запрашиваем разрешение на микрофон", component: "VoiceRecorder")
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                 DispatchQueue.main.async {
                     self?.microphonePermissionGranted = granted
-                    if !granted {
+                    if granted {
+                        LogManager.shared.info("Разрешение на микрофон предоставлено", component: "VoiceRecorder")
+                    } else {
+                        LogManager.shared.warning("Разрешение на микрофон не предоставлено", component: "VoiceRecorder")
                         self?.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
                     }
                 }
             }
         case .denied, .restricted:
             microphonePermissionGranted = false
+            LogManager.shared.warning("Доступ к микрофону запрещен", component: "VoiceRecorder")
             showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
         @unknown default:
             microphonePermissionGranted = false
+            LogManager.shared.error("Неизвестный статус разрешения микрофона", component: "VoiceRecorder")
         }
     }
     
     func startRecording() {
+        LogManager.shared.info("Запрос на начало записи", component: "VoiceRecorder")
+        
         // Проверяем разрешение на микрофон
         AVCaptureDevice.requestAccess(for: .audio) { _ in
             switch AVCaptureDevice.authorizationStatus(for: .audio) {
             case .authorized:
+                LogManager.shared.info("Разрешение на микрофон подтверждено, начинаем запись", component: "VoiceRecorder")
                 self.startActualRecording()
             case .notDetermined:
+                LogManager.shared.info("Запрашиваем разрешение на микрофон", component: "VoiceRecorder")
                 AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                     DispatchQueue.main.async {
                         if granted {
+                            LogManager.shared.info("Разрешение получено, начинаем запись", component: "VoiceRecorder")
                             self?.startActualRecording()
                         } else {
+                            LogManager.shared.warning("Разрешение на микрофон не получено", component: "VoiceRecorder")
                             self?.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
                         }
                     }
                 }
             case .denied, .restricted:
+                LogManager.shared.warning("Доступ к микрофону запрещен", component: "VoiceRecorder")
                 self.showError("Нет доступа к микрофону. Разрешите доступ в Системных настройках.")
             @unknown default:
+                LogManager.shared.error("Неизвестная ошибка доступа к микрофону", component: "VoiceRecorder")
                 self.showError("Неизвестная ошибка доступа к микрофону.")
             }
         }
-        
     }
     
     private func startActualRecording() {
-        guard !isRecording else { return }
+        guard !isRecording else { 
+            LogManager.shared.warning("Попытка начать запись, когда уже записывается", component: "VoiceRecorder")
+            return 
+        }
         
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let audioFilename = documentsPath.appendingPathComponent("voice_input.wav")
-        print("[VoiceRecorder] Попытка начать запись: \(audioFilename.path)")
+        LogManager.shared.info("Попытка начать запись: \(audioFilename.path)", component: "VoiceRecorder")
         
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatLinearPCM),
@@ -98,28 +116,35 @@ class VoiceRecorder: NSObject, ObservableObject {
         
         do {
             audioRecorder = try AVAudioRecorder(url: audioFilename, settings: settings)
-            print("[VoiceRecorder] AVAudioRecorder создан: \(audioRecorder != nil)")
+            LogManager.shared.debug("AVAudioRecorder создан: \(audioRecorder != nil)", component: "VoiceRecorder")
             let started = audioRecorder?.record() ?? false
-            print("[VoiceRecorder] .record() -> \(started)")
+            LogManager.shared.debug("AVAudioRecorder.record() -> \(started)", component: "VoiceRecorder")
             if !started {
-                print("[VoiceRecorder] AVAudioRecorder не смог начать запись. isRecording: \(audioRecorder?.isRecording ?? false)")
+                LogManager.shared.error("AVAudioRecorder не смог начать запись. isRecording: \(audioRecorder?.isRecording ?? false)", component: "VoiceRecorder")
                 showError("Ошибка: не удалось начать запись. Проверьте разрешения и настройки.")
                 return
             }
             isRecording = true
+            LogManager.shared.info("Запись начата успешно", component: "VoiceRecorder")
             showRecordingIndicator()
         } catch {
-            print("[VoiceRecorder] Ошибка создания AVAudioRecorder: \(error)")
+            LogManager.shared.error("Ошибка создания AVAudioRecorder: \(error.localizedDescription)", component: "VoiceRecorder")
             showError("Ошибка создания AVAudioRecorder: \(error.localizedDescription)")
             return
         }
     }
     
     func stopRecording() {
-        guard isRecording else { return }
+        guard isRecording else { 
+            LogManager.shared.warning("Попытка остановить запись, когда не записывается", component: "VoiceRecorder")
+            return 
+        }
+        
+        LogManager.shared.info("Останавливаем запись", component: "VoiceRecorder")
         audioRecorder?.stop()
         isRecording = false
         hideRecordingIndicator()
+        
         // Проверяем файл после записи
         let audioFilename = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("voice_input.wav")
         let fileManager = FileManager.default
@@ -127,24 +152,25 @@ class VoiceRecorder: NSObject, ObservableObject {
             do {
                 let attrs = try fileManager.attributesOfItem(atPath: audioFilename.path)
                 let fileSize = attrs[.size] as? UInt64 ?? 0
-                print("[VoiceRecorder] Файл записан: \(audioFilename.path), размер: \(fileSize) байт")
+                LogManager.shared.info("Файл записан: \(audioFilename.path), размер: \(fileSize) байт", component: "VoiceRecorder")
                 if fileSize == 0 {
-                    print("[VoiceRecorder] ВНИМАНИЕ: файл пустой!")
+                    LogManager.shared.warning("ВНИМАНИЕ: файл пустой!", component: "VoiceRecorder")
                     showError("Ошибка: записанный файл пустой. Проверьте микрофон и разрешения.")
                 }
             } catch {
-                print("[VoiceRecorder] Ошибка получения атрибутов файла: \(error)")
+                LogManager.shared.error("Ошибка получения атрибутов файла: \(error.localizedDescription)", component: "VoiceRecorder")
             }
         } else {
-            print("[VoiceRecorder] Файл не найден после записи: \(audioFilename.path)")
+            LogManager.shared.error("Файл не найден после записи: \(audioFilename.path)", component: "VoiceRecorder")
             showError("Ошибка: файл не найден после записи.")
         }
+        
         // Начинаем обработку
         processRecording()
     }
     
     private func processRecording() {
-        print("[VoiceRecorder] Вызван processRecording")
+        LogManager.shared.info("Вызван processRecording", component: "VoiceRecorder")
         isProcessing = true
         
         // Показываем уведомление о начале обработки
@@ -157,10 +183,10 @@ class VoiceRecorder: NSObject, ObservableObject {
                 self?.isProcessing = false
                 switch result {
                 case .success(let text):
-                    print("[VoiceRecorder] Результат распознавания: \(text)")
+                    LogManager.shared.info("Результат распознавания: \(text)", component: "VoiceRecorder")
                     // Уведомление о завершении будет показано в SpeechManager
                 case .failure(let error):
-                    print("[VoiceRecorder] Ошибка распознавания: \(error.localizedDescription)")
+                    LogManager.shared.error("Ошибка распознавания: \(error.localizedDescription)", component: "VoiceRecorder")
                     self?.showError("Ошибка распознавания: \(error.localizedDescription)")
                 }
             }
@@ -179,7 +205,7 @@ class VoiceRecorder: NSObject, ObservableObject {
         let request = UNNotificationRequest(identifier: "voice_recorder_\(UUID().uuidString)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("[VoiceRecorder] Ошибка отправки уведомления: \(error.localizedDescription)")
+                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: "VoiceRecorder")
             }
         }
     }
@@ -204,14 +230,18 @@ class VoiceRecorder: NSObject, ObservableObject {
 extension VoiceRecorder: AVAudioRecorderDelegate {
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
         if !flag {
+            LogManager.shared.error("Ошибка записи аудио", component: "VoiceRecorder")
             isRecording = false
             showError("Ошибка записи аудио")
+        } else {
+            LogManager.shared.info("Запись аудио завершена успешно", component: "VoiceRecorder")
         }
     }
     
     func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
         isRecording = false
         if let error = error {
+            LogManager.shared.error("Ошибка кодирования: \(error.localizedDescription)", component: "VoiceRecorder")
             showError("Ошибка кодирования: \(error.localizedDescription)")
         }
     }

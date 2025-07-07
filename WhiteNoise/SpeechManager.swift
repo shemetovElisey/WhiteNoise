@@ -37,11 +37,11 @@ class SpeechManager {
     }
     
     private func transcribeWithLocal(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        print("[SpeechManager] Вызван transcribeWithLocal для файла: \(fileURL.path)")
+        LogManager.shared.info("Вызван transcribeWithLocal для файла: \(fileURL.path)", component: "SpeechManager")
         
         // Проверяем, что файл существует
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            print("[SpeechManager] Файл не найден: \(fileURL.path)")
+            LogManager.shared.error("Файл не найден: \(fileURL.path)", component: "SpeechManager")
             completion(.failure(SpeechManagerError.fileNotFound))
             return
         }
@@ -50,15 +50,15 @@ class SpeechManager {
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
             let fileSize = attributes[.size] as? UInt64 ?? 0
-            print("[SpeechManager] Размер файла: \(fileSize) байт")
+            LogManager.shared.info("Размер файла: \(fileSize) байт", component: "SpeechManager")
             
             if fileSize == 0 {
-                print("[SpeechManager] Файл пустой!")
+                LogManager.shared.warning("Файл пустой!", component: "SpeechManager")
                 completion(.failure(SpeechManagerError.emptyFile))
                 return
             }
         } catch {
-            print("[SpeechManager] Ошибка получения атрибутов файла: \(error)")
+            LogManager.shared.error("Ошибка получения атрибутов файла: \(error.localizedDescription)", component: "SpeechManager")
             completion(.failure(error))
             return
         }
@@ -67,19 +67,19 @@ class SpeechManager {
         localRecognizer.transcribeAudio(fileURL: fileURL) { [weak self] result in
             switch result {
             case .success(let text):
-                print("[SpeechManager] Локальная модель успешно вернула текст: '\(text)'")
-                print("[SpeechManager] Вставляем текст в активное приложение...")
+                LogManager.shared.info("Локальная модель успешно вернула текст: '\(text)'", component: "SpeechManager")
+                LogManager.shared.info("Вставляем текст в активное приложение...", component: "SpeechManager")
                 self?.insertTextToFrontmostApp(text)
                 completion(.success(text))
             case .failure(let error):
-                print("[SpeechManager] Ошибка локального распознавания: \(error.localizedDescription)")
+                LogManager.shared.error("Ошибка локального распознавания: \(error.localizedDescription)", component: "SpeechManager")
                 completion(.failure(error))
             }
         }
     }
     
     private func insertTextToFrontmostApp(_ text: String) {
-        print("[SpeechManager] Копируем текст в буфер обмена вместо вставки: \'\(text)\'")
+        LogManager.shared.info("Копируем текст в буфер обмена вместо вставки: \'\(text)\'", component: "SpeechManager")
         
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -101,9 +101,9 @@ class SpeechManager {
         let request = UNNotificationRequest(identifier: "recognition_complete_\(UUID().uuidString)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("[SpeechManager] Ошибка отправки уведомления: \(error.localizedDescription)")
+                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: "SpeechManager")
             } else {
-                print("[SpeechManager] Уведомление о завершении распознавания отправлено")
+                LogManager.shared.info("Уведомление о завершении распознавания отправлено", component: "SpeechManager")
             }
         }
     }
@@ -119,7 +119,7 @@ class SpeechManager {
     
     func setRecognitionMode(_ mode: RecognitionMode) {
         // Игнорируем, так как у нас только один режим
-        print("[SpeechManager] Попытка установить режим \(mode), но используется только локальный режим")
+        LogManager.shared.info("Попытка установить режим \(mode), но используется только локальный режим", component: "SpeechManager")
     }
     
     func getCurrentMode() -> RecognitionMode {

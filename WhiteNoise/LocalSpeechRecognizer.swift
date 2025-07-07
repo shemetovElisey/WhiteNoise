@@ -10,20 +10,24 @@ import AVFoundation
 
 class LocalSpeechRecognizer {
     init() {
-        // Больше не кэшируем путь к модели
+        LogManager.shared.info("LocalSpeechRecognizer инициализирован", component: "LocalSpeechRecognizer")
     }
     
     func transcribeAudio(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
+        LogManager.shared.info("Начинаем транскрипцию файла: \(fileURL.path)", component: "LocalSpeechRecognizer")
+        
         // Конвертируем аудио в формат WAV для Whisper
         convertToWAV(from: fileURL) { [weak self] result in
             switch result {
             case .success(let wavURL):
+                LogManager.shared.info("Конвертация в WAV успешна, начинаем транскрипцию", component: "LocalSpeechRecognizer")
                 self?.performTranscription(wavURL: wavURL) { transcriptionResult in
                     completion(transcriptionResult)
                     // Удаляем временный WAV-файл только после завершения всех операций
                     try? FileManager.default.removeItem(at: wavURL)
                 }
             case .failure(let error):
+                LogManager.shared.error("Ошибка конвертации в WAV: \(error.localizedDescription)", component: "LocalSpeechRecognizer")
                 completion(.failure(error))
             }
         }
@@ -33,40 +37,40 @@ class LocalSpeechRecognizer {
         // Проверяем, что файл существует и не пустой
         let fileManager = FileManager.default
         guard fileManager.fileExists(atPath: audioURL.path) else {
-            print("[LocalSpeechRecognizer] Исходный файл не существует: \(audioURL.path)")
+            LogManager.shared.error("Исходный файл не существует: \(audioURL.path)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.conversionFailed))
             return
         }
         do {
             let attrs = try fileManager.attributesOfItem(atPath: audioURL.path)
             if let fileSize = attrs[.size] as? UInt64, fileSize == 0 {
-                print("[LocalSpeechRecognizer] Исходный файл пустой: \(audioURL.path)")
+                LogManager.shared.warning("Исходный файл пустой: \(audioURL.path)", component: "LocalSpeechRecognizer")
                 completion(.failure(LocalSpeechRecognizerError.conversionFailed))
                 return
             } else {
-                print("[LocalSpeechRecognizer] Исходный файл: \(audioURL.path), размер: \(attrs[.size] ?? 0) байт")
+                LogManager.shared.info("Исходный файл: \(audioURL.path), размер: \(attrs[.size] ?? 0) байт", component: "LocalSpeechRecognizer")
             }
         } catch {
-            print("[LocalSpeechRecognizer] Ошибка получения атрибутов файла: \(error)")
+            LogManager.shared.error("Ошибка получения атрибутов файла: \(error.localizedDescription)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.conversionFailed))
             return
         }
 
         // Если уже WAV, просто возвращаем путь
         if audioURL.pathExtension.lowercased() == "wav" {
-            print("[LocalSpeechRecognizer] Файл уже WAV, пропускаем конвертацию")
+            LogManager.shared.info("Файл уже WAV, пропускаем конвертацию", component: "LocalSpeechRecognizer")
             completion(.success(audioURL))
             return
         }
 
         let tempDir = FileManager.default.temporaryDirectory
         let wavURL = tempDir.appendingPathComponent(UUID().uuidString + ".wav")
-        print("[LocalSpeechRecognizer] Конвертация в WAV: \(wavURL.path)")
+        LogManager.shared.info("Конвертация в WAV: \(wavURL.path)", component: "LocalSpeechRecognizer")
 
         let asset = AVURLAsset(url: audioURL)
         asset.loadTracks(withMediaType: .audio) { tracks, error in
             guard let track = tracks?.first else {
-                print("[LocalSpeechRecognizer] Нет аудиотреков в файле: \(audioURL.path)")
+                LogManager.shared.error("Нет аудиотреков в файле: \(audioURL.path)", component: "LocalSpeechRecognizer")
                 completion(.failure(LocalSpeechRecognizerError.conversionFailed))
                 return
             }
@@ -93,9 +97,9 @@ class LocalSpeechRecognizer {
                 writer.startWriting()
                 writer.startSession(atSourceTime: .zero)
                 let readerStarted = reader.startReading()
-                print("[LocalSpeechRecognizer] reader.startReading() -> \(readerStarted), status: \(reader.status.rawValue)")
+                LogManager.shared.debug("reader.startReading() -> \(readerStarted), status: \(reader.status.rawValue)", component: "LocalSpeechRecognizer")
                 if !readerStarted {
-                    print("[LocalSpeechRecognizer] reader.error: \(String(describing: reader.error))")
+                    LogManager.shared.error("reader.error: \(String(describing: reader.error))", component: "LocalSpeechRecognizer")
                     completion(.failure(LocalSpeechRecognizerError.conversionFailed))
                     return
                 }
@@ -104,7 +108,7 @@ class LocalSpeechRecognizer {
                 writerInput.requestMediaDataWhenReady(on: inputQueue) {
                     while writerInput.isReadyForMoreMediaData {
                         if reader.status == .failed || reader.status == .completed {
-                            print("[LocalSpeechRecognizer] reader.status: \(reader.status.rawValue), error: \(String(describing: reader.error))")
+                            LogManager.shared.debug("reader.status: \(reader.status.rawValue), error: \(String(describing: reader.error))", component: "LocalSpeechRecognizer")
                             break
                         }
                         if let sampleBuffer = readerOutput.copyNextSampleBuffer() {
@@ -114,10 +118,10 @@ class LocalSpeechRecognizer {
                             writer.finishWriting {
                                 defer { try? FileManager.default.removeItem(at: wavURL) }
                                 if writer.status == .completed {
-                                    print("[LocalSpeechRecognizer] Конвертация завершена: \(wavURL.path)")
+                                    LogManager.shared.info("Конвертация завершена: \(wavURL.path)", component: "LocalSpeechRecognizer")
                                     completion(.success(wavURL))
                                 } else {
-                                    print("[LocalSpeechRecognizer] Ошибка завершения writer: \(String(describing: writer.error))")
+                                    LogManager.shared.error("Ошибка завершения writer: \(String(describing: writer.error))", component: "LocalSpeechRecognizer")
                                     completion(.failure(LocalSpeechRecognizerError.conversionFailed))
                                 }
                             }
@@ -126,18 +130,18 @@ class LocalSpeechRecognizer {
                     }
                 }
             } catch {
-                print("[LocalSpeechRecognizer] Ошибка конвертации: \(error)")
+                LogManager.shared.error("Ошибка конвертации: \(error.localizedDescription)", component: "LocalSpeechRecognizer")
                 completion(.failure(error))
             }
         }
     }
     
     private func performTranscription(wavURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        print("[LocalSpeechRecognizer] Вызван performTranscription для файла: \(wavURL.path)")
+        LogManager.shared.info("Вызван performTranscription для файла: \(wavURL.path)", component: "LocalSpeechRecognizer")
         
         // Проверяем, что входной файл существует
         guard FileManager.default.fileExists(atPath: wavURL.path) else {
-            print("[LocalSpeechRecognizer] ОШИБКА: Входной WAV файл не существует: \(wavURL.path)")
+            LogManager.shared.error("Входной WAV файл не существует: \(wavURL.path)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.transcriptionFailed))
             return
         }
@@ -147,7 +151,7 @@ class LocalSpeechRecognizer {
         
         // Путь к бинарнику в бандле приложения
         guard let bundlePath = Bundle.main.path(forResource: "whisper-cli", ofType: nil) else {
-            print("[LocalSpeechRecognizer] ОШИБКА: Бинарник whisper-cli не найден в бандле")
+            LogManager.shared.error("Бинарник whisper-cli не найден в бандле", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.modelNotFound))
             return
         }
@@ -159,16 +163,16 @@ class LocalSpeechRecognizer {
         let homeDir = URL(fileURLWithPath: "/Users/elisey")
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
         
-        print("[LocalSpeechRecognizer] Проверяем путь к Whisper в бандле: \(bundlePath)")
+        LogManager.shared.debug("Проверяем путь к Whisper в бандле: \(bundlePath)", component: "LocalSpeechRecognizer")
         guard FileManager.default.fileExists(atPath: bundlePath) else {
-            print("[LocalSpeechRecognizer] ОШИБКА: Whisper не найден по пути \(bundlePath)")
+            LogManager.shared.error("Whisper не найден по пути \(bundlePath)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.modelNotFound))
             return
         }
         
-        print("[LocalSpeechRecognizer] Проверяем путь к модели: \(modelPath.path)")
+        LogManager.shared.debug("Проверяем путь к модели: \(modelPath.path)", component: "LocalSpeechRecognizer")
         guard FileManager.default.fileExists(atPath: modelPath.path) else {
-            print("[LocalSpeechRecognizer] ОШИБКА: Модель не найдена по пути \(modelPath.path)")
+            LogManager.shared.error("Модель не найдена по пути \(modelPath.path)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.modelNotFound))
             return
         }
@@ -181,54 +185,54 @@ class LocalSpeechRecognizer {
         ]
         process.arguments = arguments
         
-        print("[LocalSpeechRecognizer] Запускаем Whisper с аргументами: \(arguments)")
+        LogManager.shared.info("Запускаем Whisper с аргументами: \(arguments)", component: "LocalSpeechRecognizer")
         
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = pipe
         
         process.terminationHandler = { process in
-            print("[LocalSpeechRecognizer] Whisper завершился с кодом: \(process.terminationStatus)")
+            LogManager.shared.info("Whisper завершился с кодом: \(process.terminationStatus)", component: "LocalSpeechRecognizer")
         }
         
         do {
-            print("[LocalSpeechRecognizer] Пытаемся запустить процесс...")
+            LogManager.shared.info("Пытаемся запустить процесс...", component: "LocalSpeechRecognizer")
             try process.run()
-            print("[LocalSpeechRecognizer] Процесс запущен, PID: \(process.processIdentifier)")
+            LogManager.shared.info("Процесс запущен, PID: \(process.processIdentifier)", component: "LocalSpeechRecognizer")
             
-            print("[LocalSpeechRecognizer] Ждем завершения процесса...")
+            LogManager.shared.info("Ждем завершения процесса...", component: "LocalSpeechRecognizer")
             process.waitUntilExit()
-            print("[LocalSpeechRecognizer] Процесс завершен")
+            LogManager.shared.info("Процесс завершен", component: "LocalSpeechRecognizer")
             
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             let output = String(data: data, encoding: .utf8) ?? ""
-            print("[LocalSpeechRecognizer] Whisper.cpp output: '\(output)'")
+            LogManager.shared.debug("Whisper.cpp output: '\(output)'", component: "LocalSpeechRecognizer")
             
             if process.terminationStatus == 0 {
                 // Новый способ: результат — это wavURL.path + ".txt"
                 let outputFile = URL(fileURLWithPath: wavURL.path + ".txt")
-                print("[LocalSpeechRecognizer] Ищем результат в файле: \(outputFile.path)")
+                LogManager.shared.debug("Ищем результат в файле: \(outputFile.path)", component: "LocalSpeechRecognizer")
                 
                 if FileManager.default.fileExists(atPath: outputFile.path) {
                     if let result = try? String(contentsOf: outputFile, encoding: .utf8) {
-                        print("[LocalSpeechRecognizer] Результат распознавания: '\(result)' (длина: \(result.count))")
+                        LogManager.shared.info("Результат распознавания: '\(result)' (длина: \(result.count))", component: "LocalSpeechRecognizer")
                         let punctuatedText = self.addPunctuation(to: result)
-                        print("[LocalSpeechRecognizer] Текст с пунктуацией: '\(punctuatedText)'")
+                        LogManager.shared.info("Текст с пунктуацией: '\(punctuatedText)'", component: "LocalSpeechRecognizer")
                         completion(.success(punctuatedText))
                     } else {
-                        print("[LocalSpeechRecognizer] Не удалось прочитать результат из файла: \(outputFile.path)")
+                        LogManager.shared.error("Не удалось прочитать результат из файла: \(outputFile.path)", component: "LocalSpeechRecognizer")
                         completion(.failure(LocalSpeechRecognizerError.transcriptionFailed))
                     }
                 } else {
-                    print("[LocalSpeechRecognizer] Файл с результатом не найден: \(outputFile.path)")
+                    LogManager.shared.error("Файл с результатом не найден: \(outputFile.path)", component: "LocalSpeechRecognizer")
                     completion(.failure(LocalSpeechRecognizerError.transcriptionFailed))
                 }
             } else {
-                print("[LocalSpeechRecognizer] Whisper.cpp завершился с ошибкой: \(process.terminationStatus)")
+                LogManager.shared.error("Whisper.cpp завершился с ошибкой: \(process.terminationStatus)", component: "LocalSpeechRecognizer")
                 completion(.failure(LocalSpeechRecognizerError.transcriptionFailed))
             }
         } catch {
-            print("[LocalSpeechRecognizer] Ошибка запуска Whisper.cpp: \(error)")
+            LogManager.shared.error("Ошибка запуска Whisper.cpp: \(error.localizedDescription)", component: "LocalSpeechRecognizer")
             completion(.failure(error))
         }
     }

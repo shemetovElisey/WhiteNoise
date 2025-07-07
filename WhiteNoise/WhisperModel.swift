@@ -149,12 +149,14 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     
     override init() {
         super.init()
+        LogManager.shared.info("WhisperModelManager инициализирован", component: "WhisperModelManager")
         refreshInstalledModels()
         loadSelectedModel()
     }
     
     func refreshInstalledModels() {
         installedModels = WhisperModel.availableModels.filter { $0.isInstalled }
+        LogManager.shared.info("Обновлен список установленных моделей: \(installedModels.count) моделей", component: "WhisperModelManager")
     }
     
     func loadSelectedModel() {
@@ -165,12 +167,16 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     }
     
     func selectModel(_ model: WhisperModel) {
+        LogManager.shared.info("Выбрана модель: \(model.displayName)", component: "WhisperModelManager")
         selectedModel = model
         UserDefaults.standard.set(model.filename, forKey: "WhisperModelName")
     }
     
     func downloadModel(_ model: WhisperModel, completion: @escaping (Bool) -> Void) {
+        LogManager.shared.info("Начинаем загрузку модели: \(model.displayName)", component: "WhisperModelManager")
+        
         guard let downloadURL = model.downloadURL else {
+            LogManager.shared.error("Нет ссылки для загрузки модели: \(model.displayName)", component: "WhisperModelManager")
             errorMessage = "Нет ссылки для загрузки модели."
             completion(false)
             return
@@ -189,7 +195,9 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         // Создаем директорию, если не существует
         do {
             try FileManager.default.createDirectory(at: modelsDir, withIntermediateDirectories: true)
+            LogManager.shared.info("Директория для моделей создана/проверена: \(modelsDir.path)", component: "WhisperModelManager")
         } catch {
+            LogManager.shared.error("Ошибка создания директории: \(error.localizedDescription)", component: "WhisperModelManager")
             errorMessage = "Ошибка создания директории: \(error.localizedDescription)"
             isDownloading = false
             completion(false)
@@ -197,6 +205,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         }
         
         guard let url = URL(string: downloadURL) else {
+            LogManager.shared.error("Некорректный URL: \(downloadURL)", component: "WhisperModelManager")
             isDownloading = false
             errorMessage = "Некорректный URL: \(downloadURL)"
             completion(false)
@@ -206,6 +215,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         let config = URLSessionConfiguration.default
         let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
         let task = session.downloadTask(with: url)
+        LogManager.shared.info("Задача загрузки запущена для URL: \(downloadURL)", component: "WhisperModelManager")
         task.resume()
     }
     
@@ -227,8 +237,10 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         do {
             if FileManager.default.fileExists(atPath: modelPath.path) {
                 try FileManager.default.removeItem(at: modelPath)
+                LogManager.shared.info("Существующий файл модели удален: \(modelPath.path)", component: "WhisperModelManager")
             }
             try FileManager.default.moveItem(at: location, to: modelPath)
+            LogManager.shared.info("Модель успешно сохранена: \(modelPath.path)", component: "WhisperModelManager")
             DispatchQueue.main.async {
                 self.isDownloading = false
                 self.downloadStatus = "Загрузка завершена"
@@ -237,6 +249,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
                 self.downloadCompletion = nil
             }
         } catch {
+            LogManager.shared.error("Ошибка сохранения модели: \(error.localizedDescription)", component: "WhisperModelManager")
             DispatchQueue.main.async {
                 self.isDownloading = false
                 self.downloadStatus = "Ошибка сохранения"
@@ -249,6 +262,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
+            LogManager.shared.error("Ошибка загрузки модели: \(error.localizedDescription)", component: "WhisperModelManager")
             DispatchQueue.main.async {
                 self.isDownloading = false
                 self.downloadStatus = "Ошибка загрузки"
@@ -260,14 +274,16 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     }
     
     func deleteModel(_ model: WhisperModel) {
+        LogManager.shared.info("Удаляем модель: \(model.displayName)", component: "WhisperModelManager")
         let homeDir = URL(fileURLWithPath: "/Users/elisey")
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(model.filename)")
         
         do {
             try FileManager.default.removeItem(at: modelPath)
+            LogManager.shared.info("Модель успешно удалена: \(modelPath.path)", component: "WhisperModelManager")
             refreshInstalledModels()
         } catch {
-            print("Ошибка удаления модели: \(error)")
+            LogManager.shared.error("Ошибка удаления модели: \(error.localizedDescription)", component: "WhisperModelManager")
         }
     }
 } 
