@@ -74,6 +74,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(NSMenuItem(title: "Начать запись", action: #selector(startRecording), keyEquivalent: "r"))
         }
         
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Вставить из буфера обмена", action: #selector(pasteFromClipboard), keyEquivalent: "v"))
         menu.addItem(NSMenuItem(title: "Настройки", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Выход", action: #selector(quit), keyEquivalent: "q"))
@@ -141,6 +143,56 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func quit() {
         NSApplication.shared.terminate(nil)
+    }
+    
+    @objc func pasteFromClipboard() {
+        let pasteboard = NSPasteboard.general
+        if let text = pasteboard.string(forType: .string), !text.isEmpty {
+            // Пытаемся вставить текст
+            let script = """
+            tell application "System Events"
+                keystroke "\(text)"
+            end tell
+            """
+            
+            let task = Process()
+            task.launchPath = "/usr/bin/osascript"
+            task.arguments = ["-e", script]
+            
+            let pipe = Pipe()
+            task.standardOutput = pipe
+            task.standardError = pipe
+            
+            task.terminationHandler = { process in
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? ""
+                
+                DispatchQueue.main.async {
+                    if process.terminationStatus == 0 {
+                        self.showNotification(title: "WhiteNoise", message: "Текст вставлен: \(text.prefix(30))...")
+                    } else {
+                        self.showNotification(title: "WhiteNoise - Ошибка", message: "Не удалось вставить текст. Используйте Cmd+V вручную.")
+                        print("Ошибка вставки: \(output)")
+                    }
+                }
+            }
+            
+            do {
+                try task.run()
+            } catch {
+                showNotification(title: "WhiteNoise - Ошибка", message: "Ошибка запуска вставки: \(error.localizedDescription)")
+            }
+        } else {
+            showNotification(title: "WhiteNoise", message: "Буфер обмена пуст")
+        }
+    }
+    
+    func showNotification(title: String, message: String) {
+        let notification = NSUserNotification()
+        notification.title = title
+        notification.informativeText = message
+        notification.soundName = NSUserNotificationDefaultSoundName
+        NSUserNotificationCenter.default.deliver(notification)
     }
     
     func updateStatusBarIcon(recording: Bool) {

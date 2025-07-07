@@ -5,6 +5,11 @@
 
 set -e
 
+if [ -z "$SIGN_IDENTITY" ]; then
+  echo "❌ Не указан сертификат для подписи. Укажите SIGN_IDENTITY в переменной окружения."
+  exit 1
+fi
+
 echo "🔐 Подпись библиотек whisper для Hardened Runtime..."
 
 # Проверяем, что мы в правильной директории
@@ -40,7 +45,7 @@ sign_library() {
         fi
         
         # Подписываем библиотеку с поддержкой Hardened Runtime
-        if codesign --force --sign - --options runtime "$library_path" 2>/dev/null; then
+        if codesign --force --sign "$SIGN_IDENTITY" --options runtime "$library_path" 2>/dev/null; then
             echo "   ✅ $library_name успешно подписана"
         else
             echo "   ⚠️  Не удалось подписать $library_name (возможно, нет прав разработчика)"
@@ -58,6 +63,9 @@ echo "🔐 Подписываю библиотеки whisper..."
 sign_library "$RESOURCES_DIR/libwhisper.dylib"
 sign_library "$RESOURCES_DIR/libwhisper.1.dylib"
 sign_library "$RESOURCES_DIR/libwhisper.1.7.6.dylib"
+
+# Подписываем whisper-cli
+sign_library "$RESOURCES_DIR/whisper-cli"
 
 echo ""
 echo "🔐 Подписываю библиотеки GGML..."

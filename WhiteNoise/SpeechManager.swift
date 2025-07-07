@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import AppKit
 
 enum RecognitionMode: String, CaseIterable {
     case local = "local"
@@ -70,15 +71,43 @@ class SpeechManager {
     private func insertTextToFrontmostApp(_ text: String) {
         print("[SpeechManager] Вызвана insertTextToFrontmostApp с текстом: '\(text)'")
         
+        // Простой подход: копируем в буфер обмена и показываем уведомление
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        
+        print("[SpeechManager] Текст скопирован в буфер обмена: '\(text)'")
+        
+        // Показываем уведомление с инструкцией
+        let notification = NSUserNotification()
+        notification.title = "WhiteNoise - Текст готов"
+        notification.informativeText = "Распознанный текст скопирован в буфер обмена. Используйте Cmd+V для вставки в активное приложение."
+        notification.soundName = NSUserNotificationDefaultSoundName
+        
+        NSUserNotificationCenter.default.deliver(notification)
+        
+        // Пробуем несколько методов вставки
+        DispatchQueue.global(qos: .background).async {
+            // Метод 1: Прямая вставка
+            self.trySimpleTextInsertion(text)
+            
+            // Метод 2: Через буфер обмена + Cmd+V (если первый не сработал)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.tryClipboardPaste()
+            }
+        }
+    }
+    
+    private func trySimpleTextInsertion(_ text: String) {
+        // Более прямой подход к вставке текста
         let script = """
         tell application "System Events"
             set frontmostApp to name of first application process whose frontmost is true
             log "Активное приложение: " & frontmostApp
+            delay 0.1
             keystroke "\(text)"
         end tell
         """
-        
-        print("[SpeechManager] Выполняем AppleScript: \(script)")
         
         let task = Process()
         task.launchPath = "/usr/bin/osascript"
@@ -91,21 +120,74 @@ class SpeechManager {
         task.terminationHandler = { process in
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             let output = String(data: data, encoding: .utf8) ?? ""
-            print("[SpeechManager] AppleScript завершен с кодом: \(process.terminationStatus)")
-            print("[SpeechManager] AppleScript вывод: '\(output)'")
             
-            if process.terminationStatus != 0 {
-                print("[SpeechManager] ОШИБКА: AppleScript завершился с ошибкой")
+            if process.terminationStatus == 0 {
+                print("[SpeechManager] ✅ Текст успешно вставлен автоматически")
+                // Показываем уведомление об успехе
+                DispatchQueue.main.async {
+                    let notification = NSUserNotification()
+                    notification.title = "WhiteNoise - Успех"
+                    notification.informativeText = "Текст автоматически вставлен в активное приложение"
+                    notification.soundName = NSUserNotificationDefaultSoundName
+                    NSUserNotificationCenter.default.deliver(notification)
+                }
             } else {
-                print("[SpeechManager] Текст успешно вставлен")
+                print("[SpeechManager] ℹ️ Автоматическая вставка не удалась, используйте Cmd+V")
+                print("[SpeechManager] Ошибка: \(output)")
+                
+                // Показываем уведомление с инструкцией
+                DispatchQueue.main.async {
+                    let notification = NSUserNotification()
+                    notification.title = "WhiteNoise - Используйте Cmd+V"
+                    notification.informativeText = "Текст скопирован в буфер обмена. Нажмите Cmd+V для вставки."
+                    notification.soundName = NSUserNotificationDefaultSoundName
+                    NSUserNotificationCenter.default.deliver(notification)
+                }
             }
         }
         
         do {
             try task.run()
-            print("[SpeechManager] AppleScript запущен")
+            print("[SpeechManager] 🚀 Запущена попытка автоматической вставки...")
         } catch {
             print("[SpeechManager] Ошибка запуска AppleScript: \(error)")
+        }
+    }
+    
+    private func tryClipboardPaste() {
+        // Альтернативный метод: копируем в буфер и вставляем через Cmd+V
+        let script = """
+        tell application "System Events"
+            set frontmostApp to name of first application process whose frontmost is true
+            log "Попытка вставки через Cmd+V в: " & frontmostApp
+            delay 0.2
+            key code 9 using {command down}
+        end tell
+        """
+        
+        let task = Process()
+        task.launchPath = "/usr/bin/osascript"
+        task.arguments = ["-e", script]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = pipe
+        
+        task.terminationHandler = { process in
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            
+            if process.terminationStatus == 0 {
+                print("[SpeechManager] ✅ Вставка через Cmd+V выполнена")
+            } else {
+                print("[SpeechManager] ℹ️ Вставка через Cmd+V не удалась: \(output)")
+            }
+        }
+        
+        do {
+            try task.run()
+        } catch {
+            print("[SpeechManager] Ошибка запуска Cmd+V: \(error)")
         }
     }
     
