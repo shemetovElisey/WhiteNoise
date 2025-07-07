@@ -146,6 +146,10 @@ class VoiceRecorder: NSObject, ObservableObject {
     private func processRecording() {
         print("[VoiceRecorder] Вызван processRecording")
         isProcessing = true
+        
+        // Показываем уведомление о начале обработки
+        showProcessingNotification()
+        
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let audioFile = documentsPath.appendingPathComponent("voice_input.wav")
         speechManager.transcribeAudio(fileURL: audioFile) { [weak self] result in
@@ -154,7 +158,7 @@ class VoiceRecorder: NSObject, ObservableObject {
                 switch result {
                 case .success(let text):
                     print("[VoiceRecorder] Результат распознавания: \(text)")
-                    self?.showNotification(title: "Voice Input", message: "Текст скопирован в буфер обмена: \(text.prefix(50))...")
+                    // Уведомление о завершении будет показано в SpeechManager
                 case .failure(let error):
                     print("[VoiceRecorder] Ошибка распознавания: \(error.localizedDescription)")
                     self?.showError("Ошибка распознавания: \(error.localizedDescription)")
@@ -168,16 +172,28 @@ class VoiceRecorder: NSObject, ObservableObject {
         content.title = title
         content.body = message
         content.sound = .default
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+        
+        // Добавляем информацию о приложении
+        content.userInfo = ["app": "WhiteNoise"]
+        
+        let request = UNNotificationRequest(identifier: "voice_recorder_\(UUID().uuidString)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[VoiceRecorder] Ошибка отправки уведомления: \(error.localizedDescription)")
+            }
+        }
     }
     
     private func showRecordingIndicator() {
-        self.showNotification(title: "Voice Input", message: "Запись началась... Говорите!")
+        // Убираем уведомление о начале записи - пользователь сам знает, что записывает
     }
     
     private func hideRecordingIndicator() {
-        self.showNotification(title: "Voice Input", message: "Запись завершена. Обрабатываем...")
+        // Убираем уведомление о завершении записи
+    }
+    
+    private func showProcessingNotification() {
+        self.showNotification(title: "🔄 Распознавание речи", message: "Обрабатываем ваш голос...")
     }
     
     private func showError(_ message: String) {

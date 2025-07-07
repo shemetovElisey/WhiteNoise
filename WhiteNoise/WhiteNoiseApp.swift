@@ -21,7 +21,7 @@ struct WhiteNoiseApp: App {
     }
 }
 
-class AppDelegate: NSObject, NSApplicationDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     var statusItem: NSStatusItem?
     var voiceRecorder: VoiceRecorder?
     var settingsWindow: NSWindow?
@@ -31,6 +31,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Не скрываем приложение из Dock, чтобы окно отображалось
         // NSApp.setActivationPolicy(.accessory)
+        
+        // Запрашиваем разрешения на уведомления
+        requestNotificationPermissions()
+        
+        // Устанавливаем делегат для уведомлений
+        UNUserNotificationCenter.current().delegate = self
         
         // Создаем иконку в меню
         setupStatusBar()
@@ -59,6 +65,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let hotKeyRef = carbonHotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
             print("[AppDelegate] Carbon Hot Key удален при завершении")
+        }
+    }
+    
+    func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            DispatchQueue.main.async {
+                if granted {
+                    print("[AppDelegate] Разрешения на уведомления получены")
+                } else {
+                    print("[AppDelegate] Разрешения на уведомления не получены: \(error?.localizedDescription ?? "неизвестная ошибка")")
+                }
+            }
         }
     }
     
@@ -330,13 +348,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         content.title = title
         content.body = message
         content.sound = .default
+        
+        // Добавляем информацию о приложении
+        content.userInfo = ["appIcon": "WhiteNoise"]
+        
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[AppDelegate] Ошибка отправки уведомления: \(error.localizedDescription)")
+            }
+        }
     }
     
     func updateStatusBarIcon(recording: Bool) {
         if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: recording ? "mic.fill" : "mic", accessibilityDescription: "Voice Input")
         }
+    }
+}
+
+// MARK: - UNUserNotificationCenterDelegate
+extension AppDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // Показываем уведомления даже когда приложение активно
+        completionHandler([.banner, .sound])
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        // Обрабатываем нажатие на уведомление
+        let userInfo = response.notification.request.content.userInfo
+        
+        if let text = userInfo["text"] as? String {
+            // Если это уведомление о завершении распознавания, копируем текст в буфер обмена
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+            
+            showNotification(title: "✅ Готово", message: "Текст скопирован")
+        }
+        
+        completionHandler()
     }
 }

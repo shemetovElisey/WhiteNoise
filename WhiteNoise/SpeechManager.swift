@@ -85,7 +85,27 @@ class SpeechManager {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
         
-        self.showNotification(title: "Voice Input", message: "Текст скопирован в буфер обмена. Вставьте его вручную (Cmd+V)")
+        // Показываем красивое уведомление о готовности текста
+        self.showRecognitionCompleteNotification(text: text)
+    }
+    
+    private func showRecognitionCompleteNotification(text: String) {
+        let content = UNMutableNotificationContent()
+        content.title = "✅ Распознано!"
+        content.body = "Текст скопирован в буфер обмена"
+        content.sound = .default
+        
+        // Добавляем действия для быстрого доступа
+        content.userInfo = ["text": text]
+        
+        let request = UNNotificationRequest(identifier: "recognition_complete_\(UUID().uuidString)", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("[SpeechManager] Ошибка отправки уведомления: \(error.localizedDescription)")
+            } else {
+                print("[SpeechManager] Уведомление о завершении распознавания отправлено")
+            }
+        }
     }
     
     private func showNotification(title: String, message: String) {
