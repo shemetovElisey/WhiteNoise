@@ -149,9 +149,17 @@ class LocalSpeechRecognizer {
         // Используем Whisper.cpp через командную строку
         let process = Process()
         
-        // Путь к бинарнику в бандле приложения
-        guard let bundlePath = Bundle.main.path(forResource: "whisper-cli", ofType: nil) else {
-            LogManager.shared.error("Бинарник whisper-cli не найден в бандле", component: "LocalSpeechRecognizer")
+        // Путь к бинарнику в Frameworks (где есть библиотеки)
+        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
+            LogManager.shared.error("Не удалось получить путь к Frameworks", component: "LocalSpeechRecognizer")
+            completion(.failure(LocalSpeechRecognizerError.modelNotFound))
+            return
+        }
+        let bundlePath = "\(frameworksPath)/whisper-cli"
+        
+        LogManager.shared.debug("Проверяем путь к Whisper в Frameworks: \(bundlePath)", component: "LocalSpeechRecognizer")
+        guard FileManager.default.fileExists(atPath: bundlePath) else {
+            LogManager.shared.error("Whisper не найден в Frameworks по пути \(bundlePath)", component: "LocalSpeechRecognizer")
             completion(.failure(LocalSpeechRecognizerError.modelNotFound))
             return
         }

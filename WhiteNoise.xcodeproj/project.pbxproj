@@ -31,12 +31,21 @@
 		3CAB283D2E18D006006B3BC2 /* WhiteNoise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhiteNoise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3CD34C352E1C373E0088A07A /* Exceptions for "WhiteNoise" folder in "WhiteNoise" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3CAB283C2E18D005006B3BC2 /* WhiteNoise */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 		3CD34BEF2E18F6820088A07A /* Exceptions for "WhiteNoise" folder in "Link Binary With Libraries" phase from "WhiteNoise" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = 3CAB283A2E18D005006B3BC2 /* Frameworks */;
 			membershipExceptions = (
-				"Resources/whisper-cli",
 				Resources/whisper.h,
 			);
 		};
@@ -51,6 +60,7 @@
 				Resources/libwhisper.1.7.6.dylib = (CodeSignOnCopy, );
 				Resources/libwhisper.1.dylib = (CodeSignOnCopy, );
 				Resources/libwhisper.dylib = (CodeSignOnCopy, );
+				"Binaries/whisper-cli" = (CodeSignOnCopy, );
 			};
 			buildPhase = 3CD34BEA2E18F6560088A07A /* CopyFiles */;
 			membershipExceptions = (
@@ -62,6 +72,14 @@
 				Resources/libwhisper.1.7.6.dylib,
 				Resources/libwhisper.1.dylib,
 				Resources/libwhisper.dylib,
+				"Binaries/whisper-cli",
+			);
+		};
+		3CD34C362E1C373F0088A07A /* Exceptions for "WhiteNoise" folder in "Resources" phase from "WhiteNoise" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 3CAB283B2E18D005006B3BC2 /* Resources */;
+			membershipExceptions = (
+				"Binaries/whisper-cli",
 			);
 		};
 /* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
@@ -70,8 +88,10 @@
 		3CAB283F2E18D006006B3BC2 /* WhiteNoise */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				3CD34C352E1C373E0088A07A /* Exceptions for "WhiteNoise" folder in "WhiteNoise" target */,
 				3CD34BFA2E18F7020088A07A /* Exceptions for "WhiteNoise" folder in "Copy Files" phase from "WhiteNoise" target */,
 				3CD34BEF2E18F6820088A07A /* Exceptions for "WhiteNoise" folder in "Link Binary With Libraries" phase from "WhiteNoise" target */,
+				3CD34C362E1C373F0088A07A /* Exceptions for "WhiteNoise" folder in "Resources" phase from "WhiteNoise" target */,
 			);
 			path = WhiteNoise;
 			sourceTree = "<group>";
@@ -318,6 +338,7 @@
 		3CAB284A2E18D007006B3BC2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -331,6 +352,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhiteNoise/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Приложению необходим доступ к системным событиям для вставки текста в активные приложения.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -356,6 +378,7 @@
 		3CAB284B2E18D007006B3BC2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -369,6 +392,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhiteNoise/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Приложению необходим доступ к системным событиям для вставки текста в активные приложения.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

@@ -127,10 +127,11 @@ class SpeechManager {
     }
     
     func isLocalModelAvailable() -> Bool {
-        // Проверяем наличие Whisper в бандле приложения
-        guard let whisperPath = Bundle.main.path(forResource: "whisper-cli", ofType: nil) else {
+        // Проверяем наличие Whisper в Frameworks
+        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
             return false
         }
+        let whisperPath = "\(frameworksPath)/whisper-cli"
         guard FileManager.default.fileExists(atPath: whisperPath) else {
             return false
         }
