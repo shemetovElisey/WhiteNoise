@@ -108,13 +108,13 @@ struct WhisperModel: Identifiable, Hashable {
     }
     
     var isInstalled: Bool {
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(filename)")
         return FileManager.default.fileExists(atPath: modelPath.path)
     }
     
     var fileSize: Int64? {
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(filename)")
         
         do {
@@ -187,7 +187,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         errorMessage = nil
         downloadCompletion = completion
         
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelsDir = homeDir.appendingPathComponent("Documents/whisper-models")
         let modelPath = modelsDir.appendingPathComponent(model.filename)
         currentModelPath = modelPath
@@ -275,7 +275,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     
     func deleteModel(_ model: WhisperModel) {
         LogManager.shared.info("Удаляем модель: \(model.displayName)", component: "WhisperModelManager")
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(model.filename)")
         
         do {

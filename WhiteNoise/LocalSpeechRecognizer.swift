@@ -168,7 +168,7 @@ class LocalSpeechRecognizer {
         
         // Получаем выбранную модель
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
         
         LogManager.shared.debug("Проверяем путь к Whisper в бандле: \(bundlePath)", component: "LocalSpeechRecognizer")

@@ -35,7 +35,7 @@ find_built_app() {
     echo "🔍 Поиск собранного приложения..." >&2
     
     # Ищем все Release-билды
-    RELEASE_APPS=( $(find "/Users/elisey/Library/Developer/Xcode/DerivedData" -name "WhiteNoise.app" -path "*/Release/*" -type d 2>/dev/null) )
+    RELEASE_APPS=( $(find "$HOME/Library/Developer/Xcode/DerivedData" -name "WhiteNoise.app" -path "*/Release/*" -type d 2>/dev/null) )
     if [ ${#RELEASE_APPS[@]} -gt 0 ]; then
         echo "✅ Найдены Release-билды:" >&2
         for app in "${RELEASE_APPS[@]}"; do
@@ -48,7 +48,7 @@ find_built_app() {
         return 0
     fi
     # Если не найдено в Release, ищем Debug
-    DEBUG_APPS=( $(find "/Users/elisey/Library/Developer/Xcode/DerivedData" -name "WhiteNoise.app" -path "*/Debug/*" -type d 2>/dev/null) )
+    DEBUG_APPS=( $(find "$HOME/Library/Developer/Xcode/DerivedData" -name "WhiteNoise.app" -path "*/Debug/*" -type d 2>/dev/null) )
     if [ ${#DEBUG_APPS[@]} -gt 0 ]; then
         echo "⚠️  Найдены Debug-билды:" >&2
         for app in "${DEBUG_APPS[@]}"; do
@@ -103,7 +103,7 @@ fix_app_sandbox() {
 	<true/>
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
 	<array>
-		<string>/Users/elisey/Documents/whisper-models/</string>
+		<string>~/Documents/whisper-models/</string>
 	</array>
 </dict>
 </plist>

@@ -10,7 +10,16 @@ if pgrep -f "WhiteNoise" > /dev/null; then
 else
     echo "❌ Приложение WhiteNoise не запущено"
     echo "🚀 Запускаю приложение..."
-    open /Users/elisey/Library/Developer/Xcode/DerivedData/WhiteNoise-djpzwsscxkastvfybqstsdibbbfu/Build/Products/Debug/WhiteNoise.app
+    # Автоматически находим и запускаем приложение
+    DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
+    APP_PATH=$(find "$DERIVED_DATA_PATH" -name "WhiteNoise.app" -type d 2>/dev/null | head -1)
+    
+    if [ -n "$APP_PATH" ]; then
+        open "$APP_PATH"
+    else
+        echo "❌ Приложение WhiteNoise.app не найдено в DerivedData"
+        exit 1
+    fi
     sleep 3
 fi
 

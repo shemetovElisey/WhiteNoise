@@ -138,7 +138,7 @@ class SpeechManager {
         
         // Проверяем наличие выбранной модели
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
-        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
         return FileManager.default.fileExists(atPath: modelPath.path)
     }

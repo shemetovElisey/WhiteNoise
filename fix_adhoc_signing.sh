@@ -81,4 +81,20 @@ echo "🔒 Теперь все библиотеки имеют adhoc подпи�
 echo "   и совместимы с основным приложением"
 
 chmod +x ./fix_library_signing.sh
-SIGN_IDENTITY="Apple Development: e.shemetov.o@gmail.com (HHNUQBXJ93)" ./fix_library_signing.sh "/Users/elisey/Library/Developer/Xcode/DerivedData/WhiteNoise-djpzwsscxkastvfybqstsdibbbfu/Build/Products/Debug/WhiteNoise.app/Contents/Frameworks" 
+
+# Автоматически находим путь к приложению и подписываем библиотеки
+DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
+APP_PATH=$(find "$DERIVED_DATA_PATH" -name "WhiteNoise.app" -type d 2>/dev/null | head -1)
+
+if [ -n "$APP_PATH" ]; then
+    FRAMEWORKS_PATH="$APP_PATH/Contents/Frameworks"
+    if [ -d "$FRAMEWORKS_PATH" ]; then
+        echo ""
+        echo "🔐 Подписываю библиотеки в собранном приложении..."
+        SIGN_IDENTITY="Apple Development: e.shemetov.o@gmail.com (HHNUQBXJ93)" ./fix_library_signing.sh "$FRAMEWORKS_PATH"
+    else
+        echo "⚠️  Папка Frameworks не найдена в $APP_PATH"
+    fi
+else
+    echo "⚠️  Приложение WhiteNoise.app не найдено в DerivedData"
+fi 

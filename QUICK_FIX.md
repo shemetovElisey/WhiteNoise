@@ -8,7 +8,14 @@
 ### Шаг 1: Перезапустите приложение
 ```bash
 pkill -f WhiteNoise
-open /Users/elisey/Library/Developer/Xcode/DerivedData/WhiteNoise-djpzwsscxkastvfybqstsdibbbfu/Build/Products/Debug/WhiteNoise.app
+# Автоматически находим и запускаем приложение
+DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
+APP_PATH=$(find "$DERIVED_DATA_PATH" -name "WhiteNoise.app" -type d 2>/dev/null | head -1)
+if [ -n "$APP_PATH" ]; then
+    open "$APP_PATH"
+else
+    echo "❌ Приложение WhiteNoise.app не найдено в DerivedData"
+fi
 ```
 
 ### Шаг 2: Настройте права доступа

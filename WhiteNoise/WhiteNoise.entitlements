@@ -19,7 +19,7 @@
 	</array>
 	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
 	<array>
-		<string>/Users/elisey/Documents/whisper-models/</string>
+		<string>~/Documents/whisper-models/</string>
 	</array>
 </dict>
 </plist>

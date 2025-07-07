@@ -3,7 +3,14 @@
 echo "🔍 Тестирование библиотек whisper..."
 echo "===================================="
 
-APP_PATH="/Users/elisey/Library/Developer/Xcode/DerivedData/WhiteNoise-djpzwsscxkastvfybqstsdibbbfu/Build/Products/Debug/WhiteNoise.app"
+# Автоматически находим путь к приложению
+DERIVED_DATA_PATH="$HOME/Library/Developer/Xcode/DerivedData"
+APP_PATH=$(find "$DERIVED_DATA_PATH" -name "WhiteNoise.app" -type d 2>/dev/null | head -1)
+
+if [ -z "$APP_PATH" ]; then
+    echo "❌ Приложение WhiteNoise.app не найдено в DerivedData"
+    exit 1
+fi
 RESOURCES_PATH="$APP_PATH/Contents/Resources"
 
 echo "📱 Проверка приложения: $APP_PATH"
