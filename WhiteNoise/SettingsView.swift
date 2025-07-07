@@ -8,151 +8,303 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var apiKey: String = UserDefaults.standard.string(forKey: "OpenAI_API_Key") ?? ""
-    @State private var showAPIKey = false
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
-    @State private var selectedMode: RecognitionMode = RecognitionMode(rawValue: UserDefaults.standard.string(forKey: "RecognitionMode") ?? "auto") ?? .auto
-    @State private var availableModels: [String] = []
-    @State private var selectedModel: String = UserDefaults.standard.string(forKey: "WhisperModelName") ?? "ggml-tiny.bin"
+    @StateObject private var modelManager = WhisperModelManager()
+    @State private var showingModelDetails = false
+    @State private var selectedModelForDetails: WhisperModel?
     private let speechManager = SpeechManager()
     
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Настройки Voice Input")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Режим распознавания")
-                    .font(.headline)
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("Настройки Voice Input")
+                    .font(.title2)
+                    .fontWeight(.bold)
                 
-                Picker("Режим", selection: $selectedMode) {
-                    ForEach(speechManager.getAvailableModes(), id: \.self) { mode in
-                        Text(mode.displayName).tag(mode)
+                // Текущая модель
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Текущая модель")
+                        .font(.headline)
+                    
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(modelManager.selectedModel.displayName)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            Text("Размер: \(modelManager.selectedModel.formattedFileSize)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Button("Изменить") {
+                            showingModelDetails = true
+                        }
+                        .buttonStyle(.bordered)
                     }
+                    .padding()
+                    .background(Color(NSColor.systemGray))
+                    .cornerRadius(8)
                 }
-                .pickerStyle(SegmentedPickerStyle())
                 
-                Text("Автоматический выбор: сначала OpenAI, затем локальная модель")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Модель Whisper")
-                    .font(.headline)
-                Picker("Модель", selection: $selectedModel.onChange { newValue in
-                    UserDefaults.standard.set(newValue, forKey: "WhisperModelName")
-                }) {
-                    ForEach(availableModels, id: \.self) { model in
-                        Text(model).tag(model)
-                    }
-                }
-                .pickerStyle(MenuPickerStyle())
-                Text("Файлы моделей ищутся в папке Documents/whisper-models")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("OpenAI API Ключ")
-                    .font(.headline)
-                
-                HStack {
-                    if showAPIKey {
-                        TextField("Введите ваш OpenAI API ключ", text: $apiKey)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                    } else {
-                        SecureField("Введите ваш OpenAI API ключ", text: $apiKey)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                // Статус модели
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Статус модели")
+                        .font(.headline)
+                    
+                    HStack {
+                        Image(systemName: speechManager.isLocalModelAvailable() ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(speechManager.isLocalModelAvailable() ? .green : .red)
+                        Text(speechManager.isLocalModelAvailable() ? "Модель доступна" : "Модель недоступна")
+                            .foregroundColor(speechManager.isLocalModelAvailable() ? .green : .red)
                     }
                     
-                    Button(action: {
-                        showAPIKey.toggle()
-                    }) {
-                        Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                    if !speechManager.isLocalModelAvailable() {
+                        Text("Убедитесь, что whisper-cli и выбранная модель установлены")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
                 
-                Text("Получите API ключ на https://platform.openai.com/api-keys")
+                // Загрузка модели
+                if modelManager.isDownloading {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Загрузка модели")
+                            .font(.headline)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            ProgressView(value: modelManager.downloadProgress)
+                                .progressViewStyle(LinearProgressViewStyle())
+                            
+                            Text(modelManager.downloadStatus)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
+                if let error = modelManager.errorMessage {
+                    Text("Ошибка: \(error)")
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.top, 4)
+                }
+                
+                Spacer()
+                
+                // Инструкции
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Инструкции")
+                        .font(.headline)
+                    
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text("• Нажмите Cmd+Shift+V для начала записи")
+                        Text("• Говорите четко в микрофон")
+                        Text("• Нажмите Cmd+Shift+V снова для остановки")
+                        Text("• Распознанный текст будет вставлен автоматически")
+                    }
                     .font(.caption)
                     .foregroundColor(.secondary)
+                }
             }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Горячие клавиши")
-                    .font(.headline)
+            .padding()
+        }
+        .frame(minWidth: 450, idealWidth: 500, maxWidth: 700, minHeight: 400, idealHeight: 500, maxHeight: 900)
+        .onAppear {
+            modelManager.refreshInstalledModels()
+        }
+        .sheet(isPresented: $showingModelDetails) {
+            ModelSelectionView(modelManager: modelManager)
+                .frame(minWidth: 500, minHeight: 400)
+        }
+    }
+}
+
+struct ModelSelectionView: View {
+    @ObservedObject var modelManager: WhisperModelManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingDownloadAlert = false
+    @State private var modelToDownload: WhisperModel?
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Заголовок
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Выбор модели Whisper")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text("Выберите модель для распознавания речи. Большие модели обеспечивают лучшее качество, но работают медленнее.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
                 
-                Text("Cmd + Shift + V - Начать/остановить запись")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Text("R - Начать запись (из меню)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Список моделей
+                ScrollView {
+                    if modelManager.availableModels.isEmpty {
+                        VStack(spacing: 20) {
+                            Text("Нет доступных моделей")
+                                .foregroundColor(.secondary)
+                                .padding()
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                    } else {
+                        LazyVStack(spacing: 12) {
+                            // Отладочный вывод
+                            Text("Моделей: \(modelManager.availableModels.count)")
+                                .font(.caption2)
+                                .foregroundColor(.gray)
+                            ForEach(modelManager.availableModels) { model in
+                                ModelCardView(
+                                    model: model,
+                                    isSelected: modelManager.selectedModel.filename == model.filename,
+                                    onSelect: {
+                                        if model.isInstalled {
+                                            modelManager.selectModel(model)
+                                            dismiss()
+                                        } else {
+                                            modelToDownload = model
+                                            showingDownloadAlert = true
+                                        }
+                                    },
+                                    onDownload: {
+                                        modelToDownload = model
+                                        showingDownloadAlert = true
+                                    }
+                                )
+                            }
+                        }
+                        .padding()
+                    }
+                }
             }
-            
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Как использовать")
-                    .font(.headline)
-                
-                Text("1. Настройте API ключ OpenAI")
-                    .font(.caption)
-                Text("2. Нажмите Cmd + Shift + V или выберите из меню")
-                    .font(.caption)
-                Text("3. Говорите в микрофон")
-                    .font(.caption)
-                Text("4. Текст автоматически вставится в активное поле")
-                    .font(.caption)
+            .frame(minWidth: 500, idealWidth: 600, maxWidth: 700, minHeight: 400, idealHeight: 500, maxHeight: 700)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Закрыть") {
+                        dismiss()
+                    }
+                }
             }
-            
-            Spacer()
-            
+        }
+        .alert("Загрузить модель?", isPresented: $showingDownloadAlert) {
+            Button("Отмена", role: .cancel) { }
+            Button("Загрузить") {
+                if let model = modelToDownload {
+                    modelManager.downloadModel(model) { success in
+                        if success {
+                            modelManager.selectModel(model)
+                            dismiss()
+                        }
+                    }
+                }
+            }
+        } message: {
+            if let model = modelToDownload {
+                Text("Загрузить модель \(model.displayName)? Размер файла: \(model.size)")
+            }
+        }
+    }
+}
+
+struct ModelCardView: View {
+    let model: WhisperModel
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onDownload: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Заголовок и статус
             HStack {
-                Button("Сохранить") {
-                    saveSettings()
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.displayName)
+                        .font(.headline)
+                        .fontWeight(.medium)
+                    
+                    Text(model.description)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
                 }
-                .buttonStyle(.borderedProminent)
                 
-                Button("Отмена") {
-                    NSApplication.shared.keyWindow?.close()
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title2)
                 }
-                .buttonStyle(.bordered)
+            }
+            
+            // Характеристики
+            HStack(spacing: 16) {
+                CharacteristicView(title: "Скорость", value: model.speed, icon: "speedometer")
+                CharacteristicView(title: "Точность", value: model.accuracy, icon: "target")
+                CharacteristicView(title: "Параметры", value: model.parameters, icon: "cpu")
+            }
+            
+            // Действия
+            HStack {
+                if model.isInstalled {
+                    Button(isSelected ? "Выбрана" : "Выбрать") {
+                        onSelect()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSelected)
+                } else {
+                    Button("Загрузить") {
+                        onDownload()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                Spacer()
+                
+                if model.isInstalled {
+                    Text("Установлена")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                } else {
+                    Text("Не установлена")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
             }
         }
         .padding()
-        .frame(width: 400, height: 350)
-        .alert("Настройки", isPresented: $showingAlert) {
-            Button("OK") { }
-        } message: {
-            Text(alertMessage)
-        }
-        .onAppear(perform: loadAvailableModels)
+        .background(Color(NSColor.systemGray))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+        )
     }
+}
+
+struct CharacteristicView: View {
+    let title: String
+    let value: String
+    let icon: String
     
-    private func loadAvailableModels() {
-        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let modelsDir = documentsDir.appendingPathComponent("whisper-models")
-        do {
-            let files = try FileManager.default.contentsOfDirectory(atPath: modelsDir.path)
-            let binFiles = files.filter { $0.hasSuffix(".bin") }
-            self.availableModels = binFiles.sorted()
-            if !binFiles.contains(selectedModel) {
-                self.selectedModel = binFiles.first ?? "ggml-tiny.bin"
-            }
-        } catch {
-            self.availableModels = ["ggml-tiny.bin"]
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Text(value)
+                .font(.caption)
+                .fontWeight(.medium)
+            
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
         }
-    }
-    
-    private func saveSettings() {
-        UserDefaults.standard.set(apiKey, forKey: "OpenAI_API_Key")
-        speechManager.setRecognitionMode(selectedMode)
-        UserDefaults.standard.set(selectedModel, forKey: "WhisperModelName")
-        alertMessage = "Настройки сохранены!"
-        showingAlert = true
+        .frame(maxWidth: .infinity)
     }
 }
 

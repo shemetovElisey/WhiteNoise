@@ -57,7 +57,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "mic.fill", accessibilityDescription: "Voice Input")
+            button.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "Voice Input")
             button.action = #selector(toggleRecording)
             button.target = self
         }
