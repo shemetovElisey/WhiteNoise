@@ -25,27 +25,40 @@ struct SettingsView: View {
                     Text("Текущая модель")
                         .font(.headline)
                     
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(modelManager.selectedModel.displayName)
+                    if modelManager.installedModels.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Нет установленных моделей")
                                 .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            Text("Размер: \(modelManager.selectedModel.formattedFileSize)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(.red)
+                            Button("Загрузить модель") {
+                                showingModelDetails = true
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
-                        
-                        Spacer()
-                        
-                        Button("Изменить") {
-                            showingModelDetails = true
+                        .padding()
+                        .background(Color(NSColor.systemGray))
+                        .cornerRadius(8)
+                    } else {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(modelManager.selectedModel.displayName)
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                
+                                Text("Размер: \(modelManager.selectedModel.formattedFileSize)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button("Изменить") {
+                                showingModelDetails = true
+                            }
+                            .buttonStyle(.bordered)
                         }
-                        .buttonStyle(.bordered)
+                        .padding()
+                        .background(Color(NSColor.systemGray))
+                        .cornerRadius(8)
                     }
-                    .padding()
-                    .background(Color(NSColor.systemGray))
-                    .cornerRadius(8)
                 }
                 
                 // Статус модели
@@ -126,6 +139,8 @@ struct ModelSelectionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showingDownloadAlert = false
     @State private var modelToDownload: WhisperModel?
+    @State private var modelToDelete: WhisperModel?
+    @State private var showingDeleteAlert = false
     
     var body: some View {
         NavigationView {
@@ -142,13 +157,57 @@ struct ModelSelectionView: View {
                 }
                 .padding()
                 
-                // Список моделей
+                // Прогресс загрузки
+                if modelManager.isDownloading {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Загрузка модели")
+                            .font(.headline)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            ProgressView(value: modelManager.downloadProgress)
+                                .progressViewStyle(LinearProgressViewStyle())
+                            
+                            Text(modelManager.downloadStatus)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                                    }
+                .padding()
+                .background(Color(NSColor.systemGray))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
+            
+            // Отображение ошибок
+            if let error = modelManager.errorMessage {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ошибка загрузки")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                    
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+                .padding()
+                .background(Color.red.opacity(0.1))
+                .cornerRadius(8)
+                .padding(.horizontal)
+            }
+            
+            // Список моделей
                 ScrollView {
                     if modelManager.availableModels.isEmpty {
                         VStack(spacing: 20) {
                             Text("Нет доступных моделей")
                                 .foregroundColor(.secondary)
                                 .padding()
+                            Button("Загрузить tiny-модель") {
+                                if let tiny = WhisperModel.getModel(by: "ggml-tiny.bin") {
+                                    modelManager.downloadModel(tiny) { _ in }
+                                }
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
                         .frame(maxWidth: .infinity, minHeight: 200)
                     } else {
@@ -173,6 +232,10 @@ struct ModelSelectionView: View {
                                     onDownload: {
                                         modelToDownload = model
                                         showingDownloadAlert = true
+                                    },
+                                    onDelete: {
+                                        modelToDelete = model
+                                        showingDeleteAlert = true
                                     }
                                 )
                             }
@@ -207,6 +270,31 @@ struct ModelSelectionView: View {
                 Text("Загрузить модель \(model.displayName)? Размер файла: \(model.size)")
             }
         }
+        .alert("Удалить модель?", isPresented: $showingDeleteAlert) {
+            Button("Отмена", role: .cancel) { }
+            Button("Удалить", role: .destructive) {
+                if let model = modelToDelete {
+                    let wasSelected = modelManager.selectedModel.filename == model.filename
+                    modelManager.deleteModel(model)
+                    modelManager.refreshInstalledModels()
+                    // Если удалили выбранную модель — выбрать другую или сбросить
+                    if wasSelected {
+                        if let first = modelManager.installedModels.first {
+                            modelManager.selectModel(first)
+                        } else {
+                            // Нет моделей — сбросить выбор
+                            let def = WhisperModel.getDefaultModel()
+                            modelManager.selectedModel = def
+                            UserDefaults.standard.set(def.filename, forKey: "WhisperModelName")
+                        }
+                    }
+                }
+            }
+        } message: {
+            if let model = modelToDelete {
+                Text("Удалить модель \(model.displayName)? Файл будет удалён из папки.")
+            }
+        }
     }
 }
 
@@ -215,6 +303,7 @@ struct ModelCardView: View {
     let isSelected: Bool
     let onSelect: () -> Void
     let onDownload: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -255,6 +344,13 @@ struct ModelCardView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(isSelected)
+                    if !isSelected {
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                    }
                 } else {
                     Button("Загрузить") {
                         onDownload()

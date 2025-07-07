@@ -154,10 +154,10 @@ class LocalSpeechRecognizer {
         
         process.executableURL = URL(fileURLWithPath: bundlePath)
         
-        // Динамически получаем имя модели из UserDefaults
-        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? "ggml-tiny.bin"
-        let modelPath = documentsDir.appendingPathComponent("whisper-models/").appendingPathComponent(modelName)
+        // Получаем выбранную модель
+        let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
+        let homeDir = URL(fileURLWithPath: "/Users/elisey")
+        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
         
         print("[LocalSpeechRecognizer] Проверяем путь к Whisper в бандле: \(bundlePath)")
         guard FileManager.default.fileExists(atPath: bundlePath) else {

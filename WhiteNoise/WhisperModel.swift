@@ -135,7 +135,7 @@ struct WhisperModel: Identifiable, Hashable {
     }
 }
 
-class WhisperModelManager: ObservableObject {
+class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegate {
     @Published var installedModels: [WhisperModel] = []
     @Published var availableModels: [WhisperModel] = WhisperModel.availableModels
     @Published var selectedModel: WhisperModel = WhisperModel.getDefaultModel()
@@ -144,7 +144,11 @@ class WhisperModelManager: ObservableObject {
     @Published var downloadStatus = ""
     @Published var errorMessage: String? = nil
     
-    init() {
+    private var downloadCompletion: ((Bool) -> Void)?
+    private var currentModelPath: URL?
+    
+    override init() {
+        super.init()
         refreshInstalledModels()
         loadSelectedModel()
     }
@@ -171,21 +175,21 @@ class WhisperModelManager: ObservableObject {
             completion(false)
             return
         }
-        
         isDownloading = true
         downloadProgress = 0.0
         downloadStatus = "Начинаем загрузку..."
         errorMessage = nil
+        downloadCompletion = completion
         
         let homeDir = URL(fileURLWithPath: "/Users/elisey")
         let modelsDir = homeDir.appendingPathComponent("Documents/whisper-models")
         let modelPath = modelsDir.appendingPathComponent(model.filename)
+        currentModelPath = modelPath
         
         // Создаем директорию, если не существует
         do {
             try FileManager.default.createDirectory(at: modelsDir, withIntermediateDirectories: true)
         } catch {
-            print("Ошибка создания директории: \(error)")
             errorMessage = "Ошибка создания директории: \(error.localizedDescription)"
             isDownloading = false
             completion(false)
@@ -199,54 +203,60 @@ class WhisperModelManager: ObservableObject {
             return
         }
         
-        print("[WhisperModelManager] Начинаем загрузку: \(url)")
-        let task = URLSession.shared.downloadTask(with: url) { [weak self] localURL, response, error in
-            DispatchQueue.main.async {
-                self?.isDownloading = false
-                
-                if let error = error {
-                    print("[WhisperModelManager] Ошибка загрузки: \(error)")
-                    self?.downloadStatus = "Ошибка загрузки"
-                    self?.errorMessage = "Ошибка загрузки: \(error.localizedDescription)"
-                    completion(false)
-                    return
-                }
-                
-                guard let localURL = localURL else {
-                    self?.downloadStatus = "Ошибка загрузки"
-                    self?.errorMessage = "Не удалось получить файл после загрузки."
-                    completion(false)
-                    return
-                }
-                
-                do {
-                    // Перемещаем файл в нужную директорию
-                    if FileManager.default.fileExists(atPath: modelPath.path) {
-                        try FileManager.default.removeItem(at: modelPath)
-                    }
-                    try FileManager.default.moveItem(at: localURL, to: modelPath)
-                    
-                    self?.downloadStatus = "Загрузка завершена"
-                    self?.refreshInstalledModels()
-                    print("[WhisperModelManager] Модель успешно загружена: \(modelPath.path)")
-                    completion(true)
-                } catch {
-                    print("[WhisperModelManager] Ошибка сохранения файла: \(error)")
-                    self?.downloadStatus = "Ошибка сохранения"
-                    self?.errorMessage = "Ошибка сохранения: \(error.localizedDescription)"
-                    completion(false)
-                }
-            }
-        }
-        
-        _ = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
-            DispatchQueue.main.async {
-                self?.downloadProgress = progress.fractionCompleted
-                self?.downloadStatus = "Загружено \(Int(progress.fractionCompleted * 100))%"
-            }
-        }
-        
+        let config = URLSessionConfiguration.default
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        let task = session.downloadTask(with: url)
         task.resume()
+    }
+    
+    // MARK: - URLSessionDownloadDelegate
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
+        DispatchQueue.main.async {
+            if totalBytesExpectedToWrite > 0 {
+                self.downloadProgress = Double(totalBytesWritten) / Double(totalBytesExpectedToWrite)
+                self.downloadStatus = "Загружено \(Int(self.downloadProgress * 100))%"
+            } else {
+                self.downloadProgress = 0
+                self.downloadStatus = "Загрузка..."
+            }
+        }
+    }
+    
+    func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        guard let modelPath = currentModelPath else { return }
+        do {
+            if FileManager.default.fileExists(atPath: modelPath.path) {
+                try FileManager.default.removeItem(at: modelPath)
+            }
+            try FileManager.default.moveItem(at: location, to: modelPath)
+            DispatchQueue.main.async {
+                self.isDownloading = false
+                self.downloadStatus = "Загрузка завершена"
+                self.refreshInstalledModels()
+                self.downloadCompletion?(true)
+                self.downloadCompletion = nil
+            }
+        } catch {
+            DispatchQueue.main.async {
+                self.isDownloading = false
+                self.downloadStatus = "Ошибка сохранения"
+                self.errorMessage = "Ошибка сохранения: \(error.localizedDescription)"
+                self.downloadCompletion?(false)
+                self.downloadCompletion = nil
+            }
+        }
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error = error {
+            DispatchQueue.main.async {
+                self.isDownloading = false
+                self.downloadStatus = "Ошибка загрузки"
+                self.errorMessage = "Ошибка загрузки: \(error.localizedDescription)"
+                self.downloadCompletion?(false)
+                self.downloadCompletion = nil
+            }
+        }
     }
     
     func deleteModel(_ model: WhisperModel) {
