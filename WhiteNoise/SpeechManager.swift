@@ -21,7 +21,7 @@ enum RecognitionMode: String, CaseIterable {
 }
 
 class SpeechManager {
-    private let localRecognizer = LocalSpeechRecognizer()
+    private let swiftWhisperRecognizer = SwiftWhisperRecognizer()
     
     private var currentMode: RecognitionMode {
         get {
@@ -63,16 +63,16 @@ class SpeechManager {
             return
         }
         
-        // Используем локальный распознаватель
-        localRecognizer.transcribeAudio(fileURL: fileURL) { [weak self] result in
+        // Используем SwiftWhisper распознаватель
+        swiftWhisperRecognizer.transcribeAudio(fileURL: fileURL) { [weak self] result in
             switch result {
             case .success(let text):
-                LogManager.shared.info("Локальная модель успешно вернула текст: '\(text)'", component: "SpeechManager")
+                LogManager.shared.info("SwiftWhisper успешно вернул текст: '\(text)'", component: "SpeechManager")
                 LogManager.shared.info("Вставляем текст в активное приложение...", component: "SpeechManager")
                 self?.insertTextToFrontmostApp(text)
                 completion(.success(text))
             case .failure(let error):
-                LogManager.shared.error("Ошибка локального распознавания: \(error.localizedDescription)", component: "SpeechManager")
+                LogManager.shared.error("Ошибка SwiftWhisper распознавания: \(error.localizedDescription)", component: "SpeechManager")
                 completion(.failure(error))
             }
         }
@@ -127,16 +127,7 @@ class SpeechManager {
     }
     
     func isLocalModelAvailable() -> Bool {
-        // Проверяем наличие Whisper в Frameworks
-        guard let frameworksPath = Bundle.main.privateFrameworksPath else {
-            return false
-        }
-        let whisperPath = "\(frameworksPath)/whisper-cli"
-        guard FileManager.default.fileExists(atPath: whisperPath) else {
-            return false
-        }
-        
-        // Проверяем наличие выбранной модели
+        // Проверяем наличие выбранной модели WhisperKit
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
         let homeDir = FileManager.default.homeDirectoryForCurrentUser
         let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)

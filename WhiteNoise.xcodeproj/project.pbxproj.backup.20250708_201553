@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		3CD34E9F2E1D787D0088A07A /* SwiftWhisper in Frameworks */ = {isa = PBXBuildFile; productRef = 3CD34E9E2E1D787D0088A07A /* SwiftWhisper */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		3CD34BEA2E18F6560088A07A /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -35,9 +31,60 @@
 		3CAB283D2E18D006006B3BC2 /* WhiteNoise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WhiteNoise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		3CD34C352E1C373E0088A07A /* Exceptions for "WhiteNoise" folder in "WhiteNoise" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3CAB283C2E18D005006B3BC2 /* WhiteNoise */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		3CD34BEF2E18F6820088A07A /* Exceptions for "WhiteNoise" folder in "Link Binary With Libraries" phase from "WhiteNoise" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 3CAB283A2E18D005006B3BC2 /* Frameworks */;
+			membershipExceptions = (
+				Resources/whisper.h,
+			);
+		};
+		3CD34BFA2E18F7020088A07A /* Exceptions for "WhiteNoise" folder in "Copy Files" phase from "WhiteNoise" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			attributesByRelativePath = {
+				"Binaries/whisper-cli" = (CodeSignOnCopy, );
+				"Resources/libggml-base.dylib" = (CodeSignOnCopy, );
+				"Resources/libggml-blas.dylib" = (CodeSignOnCopy, );
+				"Resources/libggml-cpu.dylib" = (CodeSignOnCopy, );
+				"Resources/libggml-metal.dylib" = (CodeSignOnCopy, );
+				Resources/libggml.dylib = (CodeSignOnCopy, );
+				Resources/libwhisper.1.7.6.dylib = (CodeSignOnCopy, );
+				Resources/libwhisper.1.dylib = (CodeSignOnCopy, );
+				Resources/libwhisper.dylib = (CodeSignOnCopy, );
+			};
+			buildPhase = 3CD34BEA2E18F6560088A07A /* CopyFiles */;
+			membershipExceptions = (
+				"Binaries/whisper-cli",
+				"Resources/libggml-base.dylib",
+				"Resources/libggml-blas.dylib",
+				"Resources/libggml-cpu.dylib",
+				"Resources/libggml-metal.dylib",
+				Resources/libggml.dylib,
+				Resources/libwhisper.1.7.6.dylib,
+				Resources/libwhisper.1.dylib,
+				Resources/libwhisper.dylib,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		3CAB283F2E18D006006B3BC2 /* WhiteNoise */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3CD34C352E1C373E0088A07A /* Exceptions for "WhiteNoise" folder in "WhiteNoise" target */,
+				3CD34BFA2E18F7020088A07A /* Exceptions for "WhiteNoise" folder in "Copy Files" phase from "WhiteNoise" target */,
+				3CD34BEF2E18F6820088A07A /* Exceptions for "WhiteNoise" folder in "Link Binary With Libraries" phase from "WhiteNoise" target */,
+			);
 			path = WhiteNoise;
 			sourceTree = "<group>";
 		};
@@ -48,7 +95,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3CD34E9F2E1D787D0088A07A /* SwiftWhisper in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,7 +147,6 @@
 			);
 			name = WhiteNoise;
 			packageProductDependencies = (
-				3CD34E9E2E1D787D0088A07A /* SwiftWhisper */,
 			);
 			productName = WhiteNoise;
 			productReference = 3CAB283D2E18D006006B3BC2 /* WhiteNoise.app */;
@@ -131,9 +176,6 @@
 			);
 			mainGroup = 3CAB28342E18D005006B3BC2;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				3CD34E9D2E1D787D0088A07A /* XCRemoteSwiftPackageReference "SwiftWhisper" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3CAB283E2E18D006006B3BC2 /* Products */;
 			projectDirPath = "";
@@ -288,9 +330,13 @@
 		3CAB284A2E18D007006B3BC2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhiteNoise/WhiteNoise.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -298,6 +344,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhiteNoise/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Приложению необходим доступ к системным событиям для вставки текста в активные приложения.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -313,6 +360,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.melxyty.WhiteNoise;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -322,9 +370,13 @@
 		3CAB284B2E18D007006B3BC2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = WhiteNoise/WhiteNoise.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -332,6 +384,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WhiteNoise/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Приложению необходим доступ к системным событиям для вставки текста в активные приложения.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -347,6 +400,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.melxyty.WhiteNoise;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -375,25 +429,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		3CD34E9D2E1D787D0088A07A /* XCRemoteSwiftPackageReference "SwiftWhisper" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/exPHAT/SwiftWhisper?tab=readme-ov-file";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		3CD34E9E2E1D787D0088A07A /* SwiftWhisper */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3CD34E9D2E1D787D0088A07A /* XCRemoteSwiftPackageReference "SwiftWhisper" */;
-			productName = SwiftWhisper;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3CAB28352E18D005006B3BC2 /* Project object */;
 }

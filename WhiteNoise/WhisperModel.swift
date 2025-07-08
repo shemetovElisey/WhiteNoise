@@ -239,8 +239,11 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
                 try FileManager.default.removeItem(at: modelPath)
                 LogManager.shared.info("Существующий файл модели удален: \(modelPath.path)", component: "WhisperModelManager")
             }
+            
+            // Просто перемещаем скачанный файл
             try FileManager.default.moveItem(at: location, to: modelPath)
             LogManager.shared.info("Модель успешно сохранена: \(modelPath.path)", component: "WhisperModelManager")
+            
             DispatchQueue.main.async {
                 self.isDownloading = false
                 self.downloadStatus = "Загрузка завершена"
