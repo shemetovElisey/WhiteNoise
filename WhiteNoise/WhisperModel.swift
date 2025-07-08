@@ -133,6 +133,19 @@ struct WhisperModel: Identifiable, Hashable {
         formatter.countStyle = .file
         return formatter.string(fromByteCount: size)
     }
+    
+    static func getLocalModelURL(for model: WhisperModel) -> URL? {
+        let homeDir = FileManager.default.homeDirectoryForCurrentUser
+        let userModelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(model.filename)
+        if FileManager.default.fileExists(atPath: userModelPath.path) {
+            return userModelPath
+        }
+        // Если не найдено в Documents, ищем в бандле
+        if let bundleURL = Bundle.main.url(forResource: "ggml-tiny", withExtension: "bin") {
+            return bundleURL
+        }
+        return nil
+    }
 }
 
 class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegate {

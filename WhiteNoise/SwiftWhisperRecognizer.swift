@@ -41,22 +41,20 @@ class SwiftWhisperRecognizer: NSObject {
         
         // Получаем выбранную модель
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
-        
-        LogManager.shared.debug("Проверяем путь к модели: \(modelPath.path)", component: "SwiftWhisperRecognizer")
-        guard FileManager.default.fileExists(atPath: modelPath.path) else {
-            LogManager.shared.error("Модель не найдена по пути \(modelPath.path)", component: "SwiftWhisperRecognizer")
+        guard let model = WhisperModel.availableModels.first(where: { $0.filename == modelName }) else {
             completion(.failure(SwiftWhisperRecognizerError.modelNotFound))
             return
         }
-        
-        // Инициализируем SwiftWhisper
+        guard let modelPath = WhisperModel.getLocalModelURL(for: model) else {
+            LogManager.shared.error("Модель не найдена ни в Documents, ни в бандле", component: "SwiftWhisperRecognizer")
+            completion(.failure(SwiftWhisperRecognizerError.modelNotFound))
+            return
+        }
+        LogManager.shared.debug("Путь к модели: \(modelPath.path)", component: "SwiftWhisperRecognizer")
         do {
             whisper = try Whisper(fromFileURL: modelPath)
             whisper?.delegate = self
             isInitialized = true
-            
             LogManager.shared.info("SwiftWhisper успешно инициализирован", component: "SwiftWhisperRecognizer")
             completion(.success(()))
         } catch {
