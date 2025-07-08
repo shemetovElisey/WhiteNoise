@@ -22,6 +22,11 @@
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //  SOFTWARE.
 //
+//
+//  This file uses SwiftWhisper library for speech recognition:
+//  https://github.com/exPHAT/SwiftWhisper
+//  Copyright (c) exPHAT. Licensed under MIT License.
+//
 
 import Foundation
 import AVFoundation

@@ -2,6 +2,48 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleName</key>
+	<string>WhiteNoise</string>
+	<key>CFBundleDisplayName</key>
+	<string>WhiteNoise</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.shemetov.whitenoise</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleExecutable</key>
+	<string>WhiteNoise</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Audio Files</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>wav</string>
+				<string>mp3</string>
+				<string>m4a</string>
+				<string>aac</string>
+			</array>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+		</dict>
+	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Приложению необходим доступ к микрофону для записи аудио и распознавания речи.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Приложению необходим доступ к папке Документы для сохранения моделей распознавания речи.</string>
+	<key>CFBundleGetInfoString</key>
+	<string>WhiteNoise - приложение для распознавания речи с использованием SwiftWhisper и whisper.cpp</string>
+	<key>CFBundleCopyright</key>
+	<string>Copyright (c) 2025 Elisey Shemetov. Powered by SwiftWhisper (https://github.com/exPHAT/SwiftWhisper) and whisper.cpp (https://github.com/ggerganov/whisper.cpp)</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>LSMinimumSystemVersionByArchitecture</key>

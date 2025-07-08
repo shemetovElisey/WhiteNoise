@@ -61,6 +61,31 @@
 | Medium | 769 MB | Медленно | Превосходная | |
 | Large | 1550 MB | Очень медленно | Максимальная | |
 
+## 📚 Зависимости
+
+Этот проект использует следующие библиотеки:
+
+### SwiftWhisper
+- **Лицензия**: MIT
+- **Автор**: exPHAT
+- **GitHub**: https://github.com/exPHAT/SwiftWhisper
+- **Описание**: "The easiest way to transcribe audio in Swift"
+- **Использование**: Основная библиотека для распознавания речи
+
+### whisper.cpp
+- **Лицензия**: MIT
+- **Автор**: Georgi Gerganov
+- **GitHub**: https://github.com/ggerganov/whisper.cpp
+- **Описание**: High-performance inference of OpenAI's Whisper automatic speech recognition (ASR) model
+- **Использование**: Базовая библиотека для SwiftWhisper
+
+### OpenAI Whisper
+- **Лицензия**: MIT
+- **Автор**: OpenAI
+- **GitHub**: https://github.com/openai/whisper
+- **Описание**: Robust Speech Recognition via Large-Scale Weak Supervision
+- **Использование**: Модели машинного обучения для распознавания речи
+
 ## 🔧 Настройка
 
 ### Выбор модели

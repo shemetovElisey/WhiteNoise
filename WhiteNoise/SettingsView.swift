@@ -156,6 +156,39 @@ struct SettingsView: View {
                         .buttonStyle(.bordered)
                     }
                 }
+                
+                Section("О приложении") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("WhiteNoise v1.0")
+                            .font(.headline)
+                        Text("Приложение для распознавания речи")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        Text("Используемые библиотеки:")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("• SwiftWhisper - распознавание речи")
+                                .font(.caption)
+                            Text("• whisper.cpp - базовая библиотека")
+                                .font(.caption)
+                            Text("• OpenAI Whisper - модели ML")
+                                .font(.caption)
+                        }
+                        .foregroundColor(.secondary)
+                        
+                        Divider()
+                        
+                        Text("Лицензия: MIT")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
             }
             .padding()
         }
