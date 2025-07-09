@@ -126,16 +126,20 @@ struct WhisperModel: Identifiable, Hashable {
         return availableModels.first { $0.isRecommended } ?? availableModels[0]
     }
     
+    static func modelsDirectory() -> URL {
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let modelsDir = appSupport.appendingPathComponent("whisper-models")
+        try? FileManager.default.createDirectory(at: modelsDir, withIntermediateDirectories: true)
+        return modelsDir
+    }
+    
     var isInstalled: Bool {
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(filename)")
+        let modelPath = WhisperModel.modelsDirectory().appendingPathComponent(filename)
         return FileManager.default.fileExists(atPath: modelPath.path)
     }
     
     var fileSize: Int64? {
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(filename)")
-        
+        let modelPath = WhisperModel.modelsDirectory().appendingPathComponent(filename)
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: modelPath.path)
             return attributes[.size] as? Int64
@@ -154,12 +158,12 @@ struct WhisperModel: Identifiable, Hashable {
     }
     
     static func getLocalModelURL(for model: WhisperModel) -> URL? {
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let userModelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(model.filename)
+        // Сначала ищем в sandbox (Application Support)
+        let userModelPath = modelsDirectory().appendingPathComponent(model.filename)
         if FileManager.default.fileExists(atPath: userModelPath.path) {
             return userModelPath
         }
-        // Если не найдено в Documents, ищем в бандле
+        // Если не найдено в sandbox, ищем в бандле
         if let bundleURL = Bundle.main.url(forResource: "ggml-tiny", withExtension: "bin") {
             return bundleURL
         }
@@ -219,22 +223,11 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
         errorMessage = nil
         downloadCompletion = completion
         
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelsDir = homeDir.appendingPathComponent("Documents/whisper-models")
+        let modelsDir = WhisperModel.modelsDirectory()
         let modelPath = modelsDir.appendingPathComponent(model.filename)
         currentModelPath = modelPath
         
-        // Создаем директорию, если не существует
-        do {
-            try FileManager.default.createDirectory(at: modelsDir, withIntermediateDirectories: true)
-            LogManager.shared.info("Директория для моделей создана/проверена: \(modelsDir.path)", component: "WhisperModelManager")
-        } catch {
-            LogManager.shared.error("Ошибка создания директории: \(error.localizedDescription)", component: "WhisperModelManager")
-            errorMessage = "Ошибка создания директории: \(error.localizedDescription)"
-            isDownloading = false
-            completion(false)
-            return
-        }
+        // Директория создаётся в modelsDirectory()
         
         guard let url = URL(string: downloadURL) else {
             LogManager.shared.error("Некорректный URL: \(downloadURL)", component: "WhisperModelManager")
@@ -310,9 +303,7 @@ class WhisperModelManager: NSObject, ObservableObject, URLSessionDownloadDelegat
     
     func deleteModel(_ model: WhisperModel) {
         LogManager.shared.info("Удаляем модель: \(model.displayName)", component: "WhisperModelManager")
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/\(model.filename)")
-        
+        let modelPath = WhisperModel.modelsDirectory().appendingPathComponent(model.filename)
         do {
             try FileManager.default.removeItem(at: modelPath)
             LogManager.shared.info("Модель успешно удалена: \(modelPath.path)", component: "WhisperModelManager")

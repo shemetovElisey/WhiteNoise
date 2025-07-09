@@ -12,14 +12,5 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
-	<key>com.apple.security.temporary-exception.apple-events</key>
-	<array>
-		<string>com.apple.systempreferences</string>
-		<string>com.apple.systemevents</string>
-	</array>
-	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
-	<array>
-		<string>~/Documents/whisper-models/</string>
-	</array>
 </dict>
 </plist>

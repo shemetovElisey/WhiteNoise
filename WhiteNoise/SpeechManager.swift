@@ -145,11 +145,16 @@ class SpeechManager {
     }
     
     func isLocalModelAvailable() -> Bool {
-        // Проверяем наличие выбранной модели WhisperKit
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
-        let homeDir = FileManager.default.homeDirectoryForCurrentUser
-        let modelPath = homeDir.appendingPathComponent("Documents/whisper-models/").appendingPathComponent(modelName)
-        return FileManager.default.fileExists(atPath: modelPath.path)
+        let sandboxPath = WhisperModel.modelsDirectory().appendingPathComponent(modelName)
+        if FileManager.default.fileExists(atPath: sandboxPath.path) {
+            return true
+        }
+        // Проверяем наличие встроенной tiny-модели в бандле
+        if let _ = Bundle.main.url(forResource: "ggml-tiny", withExtension: "bin") {
+            return true
+        }
+        return false
     }
     
     func getAvailableModes() -> [RecognitionMode] {
