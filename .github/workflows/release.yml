@@ -61,7 +61,7 @@ jobs:
         xcodebuild -exportArchive \
           -archivePath ./build/WhiteNoise.xcarchive \
           -exportPath ./build/ipa \
-          -exportOptionsPlist exportOptions-dev.plist
+          -exportOptionsPlist exportOptions.plist
           
     - name: Upload iOS build artifacts
       uses: actions/upload-artifact@v3
