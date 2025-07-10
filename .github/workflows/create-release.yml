@@ -21,22 +21,37 @@ jobs:
         # Extract version from tag
         VERSION=${GITHUB_REF#refs/tags/}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generating changelog for version: $VERSION"
+        
+        # Get all tags sorted by version
+        TAGS=$(git tag --sort=-version:refname)
+        echo "Found tags: $TAGS"
         
         # Check if this is the first release (no previous tags)
-        if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
-          # Generate changelog from commits since last tag
-          CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
-        else
+        if [ "$(echo "$TAGS" | wc -l)" -le 1 ]; then
+          echo "First release detected - getting all commits"
           # First release - get all commits
           CHANGELOG=$(git log --pretty=format:"- %s" HEAD)
+        else
+          # Get the previous tag (second in the sorted list)
+          PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
+          echo "Previous tag: $PREVIOUS_TAG"
+          # Generate changelog from commits since last tag
+          CHANGELOG=$(git log --pretty=format:"- %s" "$PREVIOUS_TAG"..HEAD)
         fi
         
+        # Handle empty changelog
+        if [ -z "$CHANGELOG" ]; then
+          CHANGELOG="- No changes detected"
+        fi
+        
+        echo "Generated changelog with $(echo "$CHANGELOG" | wc -l) entries"
         echo "changelog<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.changelog.outputs.version }}
         name: WhiteNoise ${{ steps.changelog.outputs.version }}
