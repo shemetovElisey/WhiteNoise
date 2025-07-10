@@ -35,21 +35,21 @@ struct SettingsView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Text("Настройки Voice Input")
+                Text("voice_input_settings".localized)
                     .font(.title2)
                     .fontWeight(.bold)
                 
                 // Текущая модель
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Текущая модель")
+                    Text("current_model".localized)
                         .font(.headline)
                     
                     if modelManager.installedModels.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Нет установленных моделей")
+                            Text("no_models_installed".localized)
                                 .font(.subheadline)
                                 .foregroundColor(.red)
-                            Button("Загрузить модель") {
+                            Button("download_model".localized) {
                                 showingModelDetails = true
                             }
                             .buttonStyle(.borderedProminent)
@@ -64,12 +64,12 @@ struct SettingsView: View {
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                                 
-                                Text("Размер: \(modelManager.selectedModel.formattedFileSize)")
+                                Text("model_size".localized(with: modelManager.selectedModel.formattedFileSize))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
-                            Button("Изменить") {
+                            Button("change".localized) {
                                 showingModelDetails = true
                             }
                             .buttonStyle(.bordered)
@@ -82,18 +82,18 @@ struct SettingsView: View {
                 
                 // Статус модели
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Статус модели")
+                    Text("model_status".localized)
                         .font(.headline)
                     
                     HStack {
                         Image(systemName: speechManager.isLocalModelAvailable() ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .foregroundColor(speechManager.isLocalModelAvailable() ? .green : .red)
-                        Text(speechManager.isLocalModelAvailable() ? "Модель доступна" : "Модель недоступна")
+                        Text(speechManager.isLocalModelAvailable() ? "model_available".localized : "model_unavailable".localized)
                             .foregroundColor(speechManager.isLocalModelAvailable() ? .green : .red)
                     }
                     
                     if !speechManager.isLocalModelAvailable() {
-                        Text("Убедитесь, что whisper-cli и выбранная модель установлены")
+                        Text("ensure_whisper_cli_installed".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -102,7 +102,7 @@ struct SettingsView: View {
                 // Загрузка модели
                 if modelManager.isDownloading {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Загрузка модели")
+                        Text("downloading_model".localized)
                             .font(.headline)
                         
                         VStack(alignment: .leading, spacing: 8) {
@@ -117,7 +117,7 @@ struct SettingsView: View {
                 }
                 
                 if let error = modelManager.errorMessage {
-                    Text("Ошибка: \(error)")
+                    Text("error".localized(with: error))
                         .foregroundColor(.red)
                         .font(.caption)
                         .padding(.top, 4)
@@ -127,14 +127,14 @@ struct SettingsView: View {
                 
                 // Инструкции
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Инструкции")
+                    Text("instructions".localized)
                         .font(.headline)
                     
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("• Нажмите Cmd+Shift+V для начала записи")
-                        Text("• Говорите четко в микрофон")
-                        Text("• Нажмите Cmd+Shift+V снова для остановки")
-                        Text("• Распознанный текст будет скопирован в буфер обмена — вставьте его вручную (Cmd+V)")
+                        Text("instruction_1".localized)
+                        Text("instruction_2".localized)
+                        Text("instruction_3".localized)
+                        Text("instruction_4".localized)
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -142,48 +142,48 @@ struct SettingsView: View {
                 
                 // Системные логи
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Системные логи")
+                    Text("system_logs".localized)
                         .font(.headline)
                     
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Просматривайте и экспортируйте системные логи для диагностики проблем")
+                        Text("view_export_logs".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Button("Открыть логи") {
+                        Button("open_logs".localized) {
                             showingLogsView = true
                         }
                         .buttonStyle(.bordered)
                     }
                 }
                 
-                Section("О приложении") {
+                Section("about_app".localized) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("WhiteNoise v1.0")
+                        Text("app_version".localized)
                             .font(.headline)
-                        Text("Приложение для распознавания речи")
+                        Text("app_description".localized)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
                         Divider()
                         
-                        Text("Используемые библиотеки:")
+                        Text("used_libraries".localized)
                             .font(.subheadline)
                             .fontWeight(.medium)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("• SwiftWhisper - распознавание речи")
+                            Text("library_swiftwhisper".localized)
                                 .font(.caption)
-                            Text("• whisper.cpp - базовая библиотека")
+                            Text("library_whisper_cpp".localized)
                                 .font(.caption)
-                            Text("• OpenAI Whisper - модели ML")
+                            Text("library_openai_whisper".localized)
                                 .font(.caption)
                         }
                         .foregroundColor(.secondary)
                         
                         Divider()
                         
-                        Text("Лицензия: MIT")
+                        Text("license_mit".localized)
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -230,96 +230,40 @@ struct ModelSelectionView: View {
                 }
                 .padding()
                 
-                // Прогресс загрузки
-                if modelManager.isDownloading {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Загрузка модели")
-                            .font(.headline)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            ProgressView(value: modelManager.downloadProgress)
-                                .progressViewStyle(LinearProgressViewStyle())
-                            
-                            Text(modelManager.downloadStatus)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                                    }
-                .padding()
-                .background(Color(NSColor.systemGray))
-                .cornerRadius(8)
-                .padding(.horizontal)
-            }
-            
-            // Отображение ошибок
-            if let error = modelManager.errorMessage {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Ошибка загрузки")
-                        .font(.headline)
-                        .foregroundColor(.red)
-                    
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-                .padding()
-                .background(Color.red.opacity(0.1))
-                .cornerRadius(8)
-                .padding(.horizontal)
-            }
-            
-            // Список моделей
+                Divider()
+                
+                // Список моделей
                 ScrollView {
-                    if modelManager.availableModels.isEmpty {
-                        VStack(spacing: 20) {
-                            Text("Нет доступных моделей")
-                                .foregroundColor(.secondary)
-                                .padding()
-                            Button("Загрузить tiny-модель") {
-                                if let tiny = WhisperModel.getModel(by: "ggml-tiny.bin") {
-                                    modelManager.downloadModel(tiny) { _ in }
+                    LazyVStack(spacing: 12) {
+                        ForEach(modelManager.availableModels) { model in
+                            ModelRowView(
+                                model: model,
+                                isInstalled: modelManager.installedModels.contains(model),
+                                isSelected: modelManager.selectedModel == model,
+                                isDownloading: modelManager.isDownloading && modelManager.downloadingModel == model,
+                                downloadProgress: modelManager.downloadProgress,
+                                onDownload: {
+                                    modelToDownload = model
+                                    showingDownloadAlert = true
+                                },
+                                onSelect: {
+                                    modelManager.selectModel(model)
+                                    dismiss()
+                                },
+                                onDelete: {
+                                    modelToDelete = model
+                                    showingDeleteAlert = true
                                 }
-                            }
-                            .buttonStyle(.borderedProminent)
+                            )
                         }
-                        .frame(maxWidth: .infinity, minHeight: 200)
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            // Отладочный вывод
-                            Text("Моделей: \(modelManager.availableModels.count)")
-                                .font(.caption2)
-                                .foregroundColor(.gray)
-                            ForEach(modelManager.availableModels) { model in
-                                ModelCardView(
-                                    model: model,
-                                    isSelected: modelManager.selectedModel.filename == model.filename,
-                                    onSelect: {
-                                        if model.isInstalled {
-                                            modelManager.selectModel(model)
-                                            dismiss()
-                                        } else {
-                                            modelToDownload = model
-                                            showingDownloadAlert = true
-                                        }
-                                    },
-                                    onDownload: {
-                                        modelToDownload = model
-                                        showingDownloadAlert = true
-                                    },
-                                    onDelete: {
-                                        modelToDelete = model
-                                        showingDeleteAlert = true
-                                    }
-                                )
-                            }
-                        }
-                        .padding()
                     }
+                    .padding()
                 }
             }
-            .frame(minWidth: 500, idealWidth: 600, maxWidth: 700, minHeight: 400, idealHeight: 500, maxHeight: 700)
+            .navigationTitle("Модели")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Закрыть") {
                         dismiss()
                     }
@@ -330,165 +274,106 @@ struct ModelSelectionView: View {
             Button("Отмена", role: .cancel) { }
             Button("Загрузить") {
                 if let model = modelToDownload {
-                    modelManager.downloadModel(model) { success in
-                        if success {
-                            modelManager.selectModel(model)
-                            dismiss()
-                        }
-                    }
+                    modelManager.downloadModel(model)
                 }
             }
         } message: {
             if let model = modelToDownload {
-                Text("Загрузить модель \(model.displayName)? Размер файла: \(model.size)")
+                Text("Модель \(model.displayName) (\(model.formattedFileSize)) будет загружена. Это может занять некоторое время.")
             }
         }
         .alert("Удалить модель?", isPresented: $showingDeleteAlert) {
             Button("Отмена", role: .cancel) { }
             Button("Удалить", role: .destructive) {
                 if let model = modelToDelete {
-                    let wasSelected = modelManager.selectedModel.filename == model.filename
                     modelManager.deleteModel(model)
-                    modelManager.refreshInstalledModels()
-                    // Если удалили выбранную модель — выбрать другую или сбросить
-                    if wasSelected {
-                        if let first = modelManager.installedModels.first {
-                            modelManager.selectModel(first)
-                        } else {
-                            // Нет моделей — сбросить выбор
-                            let def = WhisperModel.getDefaultModel()
-                            modelManager.selectedModel = def
-                            UserDefaults.standard.set(def.filename, forKey: "WhisperModelName")
-                        }
-                    }
                 }
             }
         } message: {
             if let model = modelToDelete {
-                Text("Удалить модель \(model.displayName)? Файл будет удалён из папки.")
+                Text("Модель \(model.displayName) будет удалена. Это действие нельзя отменить.")
             }
         }
     }
 }
 
-struct ModelCardView: View {
+struct ModelRowView: View {
     let model: WhisperModel
+    let isInstalled: Bool
     let isSelected: Bool
-    let onSelect: () -> Void
+    let isDownloading: Bool
+    let downloadProgress: Double
     let onDownload: () -> Void
+    let onSelect: () -> Void
     let onDelete: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Заголовок и статус
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(model.displayName)
                         .font(.headline)
-                        .fontWeight(.medium)
                     
                     Text(model.description)
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .lineLimit(2)
+                    
+                    Text("Размер: \(model.formattedFileSize)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.blue)
-                        .font(.title2)
-                }
-            }
-            
-            // Характеристики
-            HStack(spacing: 16) {
-                CharacteristicView(title: "Скорость", value: model.speed, icon: "speedometer")
-                CharacteristicView(title: "Точность", value: model.accuracy, icon: "target")
-                CharacteristicView(title: "Параметры", value: model.parameters, icon: "cpu")
-            }
-            
-            // Действия
-            HStack {
-                if model.isInstalled {
-                    Button(isSelected ? "Выбрана" : "Выбрать") {
-                        onSelect()
+                VStack(alignment: .trailing, spacing: 8) {
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isSelected)
-                    if !isSelected {
-                        Button(role: .destructive) {
+                    
+                    if isInstalled {
+                        Button("Выбрать") {
+                            onSelect()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isSelected)
+                        
+                        Button("Удалить") {
                             onDelete()
-                        } label: {
-                            Image(systemName: "trash")
+                        }
+                        .buttonStyle(.bordered)
+                        .foregroundColor(.red)
+                    } else {
+                        if isDownloading {
+                            VStack(alignment: .trailing, spacing: 4) {
+                                ProgressView(value: downloadProgress)
+                                    .progressViewStyle(LinearProgressViewStyle())
+                                    .frame(width: 100)
+                                
+                                Text("\(Int(downloadProgress * 100))%")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        } else {
+                            Button("Загрузить") {
+                                onDownload()
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
                     }
-                } else {
-                    Button("Загрузить") {
-                        onDownload()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                
-                Spacer()
-                
-                if model.isInstalled {
-                    Text("Установлена")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                } else {
-                    Text("Не установлена")
-                        .font(.caption)
-                        .foregroundColor(.red)
                 }
             }
         }
         .padding()
-        .background(Color(NSColor.systemGray))
-        .cornerRadius(12)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 8)
                 .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
         )
-    }
-}
-
-struct CharacteristicView: View {
-    let title: String
-    let value: String
-    let icon: String
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption)
-                .foregroundColor(.secondary)
-            
-            Text(value)
-                .font(.caption)
-                .fontWeight(.medium)
-            
-            Text(title)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
 #Preview {
     SettingsView()
 }
-
-extension Binding {
-    func onChange(_ handler: @escaping (Value) -> Void) -> Binding<Value> {
-        Binding(
-            get: { self.wrappedValue },
-            set: { newValue in
-                self.wrappedValue = newValue
-                handler(newValue)
-            }
-        )
-    }
-} 

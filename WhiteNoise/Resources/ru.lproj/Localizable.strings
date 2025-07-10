@@ -1,0 +1,95 @@
+// AppDelegate
+"app_started" = "Приложение запущено";
+"app_initialization_completed" = "Инициализация приложения завершена";
+"app_terminating" = "Приложение завершается";
+"global_monitor_removed" = "Глобальный мониторинг удален при завершении";
+"carbon_hotkey_removed" = "Carbon Hot Key удален при завершении";
+"notification_permissions_granted" = "Разрешения на уведомления получены";
+"notification_permissions_denied" = "Разрешения на уведомления не получены: %@";
+"unknown_error" = "неизвестная ошибка";
+"stop_recording" = "Остановить запись";
+"start_recording" = "Начать запись";
+"paste_from_clipboard" = "Вставить из буфера обмена";
+"settings" = "Настройки";
+"quit" = "Выход";
+"registering_shortcuts" = "Регистрация шорткатов...";
+"global_shortcut_registered" = "Глобальный шорткат Cmd+Shift+V зарегистрирован успешно";
+"global_monitor_unavailable" = "Глобальный мониторинг недоступен (sandbox ограничения)";
+"shortcuts_registered" = "Шорткаты зарегистрированы. Используйте меню в строке состояния как альтернативу.";
+"local_shortcut_registered" = "Локальный шорткат Cmd+Shift+V зарегистрирован";
+
+// ContentView
+"stop_recording_button" = "Stop Recording";
+"start_recording_button" = "Start Recording";
+"microphone_access_granted" = "Доступ к микрофону разрешён";
+"microphone_access_denied" = "Доступ к микрофону запрещён";
+"before_creating_audiorecorder" = "Перед созданием AVAudioRecorder";
+"audiorecorder_created" = "AVAudioRecorder создан: %@";
+"after_record_call" = "После вызова record(), started: %@";
+"audiorecorder_failed" = "AVAudioRecorder не смог начать запись. isRecording: %@";
+"audiorecorder_error" = "Ошибка создания AVAudioRecorder: %@";
+"recording_stopped" = "Recording stopped";
+
+// SettingsView
+"voice_input_settings" = "Настройки Voice Input";
+"current_model" = "Текущая модель";
+"no_models_installed" = "Нет установленных моделей";
+"download_model" = "Загрузить модель";
+"change" = "Изменить";
+"model_status" = "Статус модели";
+"model_available" = "Модель доступна";
+"model_unavailable" = "Модель недоступна";
+"ensure_whisper_cli_installed" = "Убедитесь, что whisper-cli и выбранная модель установлены";
+"downloading_model" = "Загрузка модели";
+"error" = "Ошибка: %@";
+"instructions" = "Инструкции";
+"instruction_1" = "• Нажмите Cmd+Shift+V для начала записи";
+"instruction_2" = "• Говорите четко в микрофон";
+"instruction_3" = "• Нажмите Cmd+Shift+V снова для остановки";
+"instruction_4" = "• Распознанный текст будет скопирован в буфер обмена — вставьте его вручную (Cmd+V)";
+"system_logs" = "Системные логи";
+"view_export_logs" = "Просматривайте и экспортируйте системные логи для диагностики проблем";
+"open_logs" = "Открыть логи";
+"about_app" = "О приложении";
+"app_version" = "WhiteNoise v1.0";
+"app_description" = "Приложение для распознавания речи";
+"used_libraries" = "Используемые библиотеки:";
+"library_swiftwhisper" = "• SwiftWhisper - распознавание речи";
+"library_whisper_cpp" = "• whisper.cpp - базовая библиотека";
+"library_openai_whisper" = "• OpenAI Whisper - модели ML";
+"license_mit" = "Лицензия: MIT";
+
+// LogsView
+"logs" = "Логи";
+"export_logs" = "Экспорт логов";
+"clear_logs" = "Очистить логи";
+"no_logs_available" = "Логи недоступны";
+"logs_exported" = "Логи экспортированы в: %@";
+"export_failed" = "Ошибка экспорта логов: %@";
+"clear_logs_confirmation" = "Вы уверены, что хотите очистить все логи?";
+"clear" = "Очистить";
+"cancel" = "Отмена";
+
+// WhisperModel
+"model_size" = "Размер: %@";
+"model_downloading" = "Загрузка...";
+"model_download_complete" = "Загрузка завершена";
+"model_download_failed" = "Ошибка загрузки";
+"model_installing" = "Установка...";
+"model_install_complete" = "Установка завершена";
+"model_install_failed" = "Ошибка установки";
+
+// SpeechManager
+"speech_recognition_started" = "Распознавание речи началось";
+"speech_recognition_completed" = "Распознавание речи завершено";
+"speech_recognition_failed" = "Ошибка распознавания речи: %@";
+"text_copied_to_clipboard" = "Текст скопирован в буфер обмена";
+
+// VoiceRecorder
+"recording_started" = "Запись началась";
+"recording_stopped" = "Запись остановлена";
+"recording_error" = "Ошибка записи: %@";
+"audio_session_error" = "Ошибка настройки аудио сессии: %@";
+"permission_denied" = "Доступ к микрофону запрещен";
+"recording_in_progress" = "Запись уже идет";
+"no_recording_in_progress" = "Запись не идет";

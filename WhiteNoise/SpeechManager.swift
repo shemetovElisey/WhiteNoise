@@ -55,7 +55,7 @@ class SpeechManager {
     }
     
     private func transcribeWithLocal(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        LogManager.shared.info("Вызван transcribeWithLocal для файла: \(fileURL.path)", component: .speechManager)
+        LogManager.shared.info("speech_recognition_started".localized, component: .speechManager)
         
         // Проверяем, что файл существует
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
@@ -85,12 +85,12 @@ class SpeechManager {
         swiftWhisperRecognizer.transcribeAudio(fileURL: fileURL) { [weak self] result in
             switch result {
             case .success(let text):
-                LogManager.shared.info("SwiftWhisper успешно вернул текст: '\(text)'", component: .speechManager)
+                LogManager.shared.info("speech_recognition_completed".localized, component: .speechManager)
                 LogManager.shared.info("Вставляем текст в активное приложение...", component: .speechManager)
                 self?.insertTextToFrontmostApp(text)
                 completion(.success(text))
             case .failure(let error):
-                LogManager.shared.error("Ошибка SwiftWhisper распознавания: \(error.localizedDescription)", component: .speechManager)
+                LogManager.shared.error("speech_recognition_failed".localized(with: error.localizedDescription), component: .speechManager)
                 completion(.failure(error))
             }
         }
@@ -110,7 +110,7 @@ class SpeechManager {
     private func showRecognitionCompleteNotification(text: String) {
         let content = UNMutableNotificationContent()
         content.title = "✅ Распознано!"
-        content.body = "Текст скопирован в буфер обмена"
+        content.body = "text_copied_to_clipboard".localized
         content.sound = .default
         
         // Добавляем действия для быстрого доступа
@@ -172,4 +172,4 @@ enum SpeechManagerError: Error, LocalizedError {
             return "Аудиофайл пустой"
         }
     }
-} 
+}

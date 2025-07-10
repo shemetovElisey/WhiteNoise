@@ -48,7 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Инициализируем систему логов
-        LogManager.shared.info("Приложение запущено", component: .appDelegate)
+        LogManager.shared.info("app_started".localized, component: .appDelegate)
         
         // Не скрываем приложение из Dock, чтобы окно отображалось
         // NSApp.setActivationPolicy(.accessory)
@@ -74,22 +74,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Подписываемся на уведомления об изменении состояния записи
         NotificationCenter.default.addObserver(self, selector: #selector(recordingStateChanged), name: .recordingStateChanged, object: nil)
         
-        LogManager.shared.info("Инициализация приложения завершена", component: .appDelegate)
+        LogManager.shared.info("app_initialization_completed".localized, component: .appDelegate)
     }
     
     func applicationWillTerminate(_ notification: Notification) {
-        LogManager.shared.info("Приложение завершается", component: .appDelegate)
+        LogManager.shared.info("app_terminating".localized, component: .appDelegate)
         
         // Очищаем глобальный мониторинг при завершении
         if let monitor = globalMonitor {
             NSEvent.removeMonitor(monitor)
-            LogManager.shared.debug("Глобальный мониторинг удален при завершении", component: .appDelegate)
+            LogManager.shared.debug("global_monitor_removed".localized, component: .appDelegate)
         }
         
         // Очищаем Carbon Hot Key
         if let hotKeyRef = carbonHotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
-            LogManager.shared.debug("Carbon Hot Key удален при завершении", component: .appDelegate)
+            LogManager.shared.debug("carbon_hotkey_removed".localized, component: .appDelegate)
         }
     }
     
@@ -97,9 +97,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
-                    LogManager.shared.info("Разрешения на уведомления получены", component: .appDelegate)
+                    LogManager.shared.info("notification_permissions_granted".localized, component: .appDelegate)
                 } else {
-                    LogManager.shared.warning("Разрешения на уведомления не получены: \(error?.localizedDescription ?? "неизвестная ошибка")", component: .appDelegate)
+                    LogManager.shared.warning("notification_permissions_denied".localized(with: error?.localizedDescription ?? "unknown_error".localized), component: .appDelegate)
                 }
             }
         }
@@ -130,17 +130,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let menu = NSMenu()
         
         if voiceRecorder?.isRecording == true {
-            menu.addItem(NSMenuItem(title: "Остановить запись", action: #selector(stopRecording), keyEquivalent: "r"))
+            menu.addItem(NSMenuItem(title: "stop_recording".localized, action: #selector(stopRecording), keyEquivalent: "r"))
         } else {
-            menu.addItem(NSMenuItem(title: "Начать запись", action: #selector(startRecording), keyEquivalent: "r"))
+            menu.addItem(NSMenuItem(title: "start_recording".localized, action: #selector(startRecording), keyEquivalent: "r"))
         }
         
         menu.addItem(NSMenuItem.separator())
         
-        menu.addItem(NSMenuItem(title: "Вставить из буфера обмена", action: #selector(pasteFromClipboard), keyEquivalent: "v"))
-        menu.addItem(NSMenuItem(title: "Настройки", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "paste_from_clipboard".localized, action: #selector(pasteFromClipboard), keyEquivalent: "v"))
+        menu.addItem(NSMenuItem(title: "settings".localized, action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Выход", action: #selector(quit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: "quit".localized, action: #selector(quit), keyEquivalent: "q"))
         
         statusItem?.menu = menu
     }
@@ -149,7 +149,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // В sandbox режиме глобальные мониторинги могут не работать
         // Поэтому используем только локальные мониторинги и меню
         
-        LogManager.shared.info("Регистрация шорткатов...", component: .appDelegate)
+        LogManager.shared.info("registering_shortcuts".localized, component: .appDelegate)
         
         // Регистрируем локальный мониторинг
         registerLocalShortcut()
@@ -165,9 +165,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
         
         if globalMonitor != nil {
-            LogManager.shared.info("Глобальный шорткат Cmd+Shift+V зарегистрирован успешно", component: .appDelegate)
+            LogManager.shared.info("global_shortcut_registered".localized, component: .appDelegate)
         } else {
-            LogManager.shared.warning("Глобальный мониторинг недоступен (sandbox ограничения)", component: .appDelegate)
+            LogManager.shared.warning("global_monitor_unavailable".localized, component: .appDelegate)
         }
         
         // Пытаемся зарегистрировать Carbon Hot Key как дополнительный вариант
@@ -176,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Устанавливаем обработчик событий Carbon
         setupCarbonEventHandler()
         
-        LogManager.shared.info("Шорткаты зарегистрированы. Используйте меню в строке состояния как альтернативу.", component: .appDelegate)
+        LogManager.shared.info("shortcuts_registered".localized, component: .appDelegate)
     }
     
     func registerLocalShortcut() {
@@ -190,7 +190,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             }
             return event
         }
-        LogManager.shared.info("Локальный шорткат Cmd+Shift+V зарегистрирован", component: .appDelegate)
+        LogManager.shared.info("local_shortcut_registered".localized, component: .appDelegate)
     }
     
     func registerCarbonHotKey() {

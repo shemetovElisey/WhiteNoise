@@ -68,7 +68,7 @@ struct LogsView: View {
             // Заголовок и кнопки управления
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Системные логи")
+                    Text("logs".localized)
                         .font(.title2)
                         .fontWeight(.bold)
                     
@@ -80,13 +80,13 @@ struct LogsView: View {
                 Spacer()
                 
                 HStack(spacing: 12) {
-                    Button("Очистить") {
+                    Button("clear_logs".localized) {
                         showingClearAlert = true
                     }
                     .buttonStyle(.bordered)
                     .foregroundColor(.red)
                     
-                    Button("Экспорт") {
+                    Button("export_logs".localized) {
                         showingExportSheet = true
                     }
                     .buttonStyle(.borderedProminent)
@@ -171,7 +171,7 @@ struct LogsView: View {
                         .font(.system(size: 48))
                         .foregroundColor(.secondary)
                     
-                    Text("Логи не найдены")
+                    Text("no_logs_available".localized)
                         .font(.headline)
                         .foregroundColor(.secondary)
                     
@@ -198,34 +198,27 @@ struct LogsView: View {
             }
         }
         .frame(minWidth: 600, minHeight: 400)
-        .alert("Очистить логи?", isPresented: $showingClearAlert) {
-            Button("Отмена", role: .cancel) { }
-            Button("Очистить", role: .destructive) {
+        .alert("clear_logs_confirmation".localized, isPresented: $showingClearAlert) {
+            Button("cancel".localized, role: .cancel) { }
+            Button("clear".localized, role: .destructive) {
                 logManager.clearLogs()
             }
-        } message: {
-            Text("Все логи будут удалены. Это действие нельзя отменить.")
         }
-        .sheet(isPresented: $showingExportSheet) {
-            ExportLogsView(
-                logManager: logManager,
-                filteredLogs: filteredLogs,
-                onExport: { url in
-                    exportedFileURL = url
-                    showingExportSuccess = true
-                }
-            )
-        }
-        .alert("Логи экспортированы", isPresented: $showingExportSuccess) {
+        .alert("logs_exported".localized(with: exportedFileURL?.path ?? ""), isPresented: $showingExportSuccess) {
             Button("OK") { }
-            if let url = exportedFileURL {
-                Button("Открыть папку") {
-                    NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
-                }
-            }
-        } message: {
-            if let url = exportedFileURL {
-                Text("Файл сохранен: \(url.lastPathComponent)")
+        }
+        .fileExporter(
+            isPresented: $showingExportSheet,
+            document: LogExportDocument(logs: filteredLogs),
+            contentType: .plainText,
+            defaultFilename: "whitenoise_logs_\(Date().ISO8601String()).txt"
+        ) { result in
+            switch result {
+            case .success(let url):
+                exportedFileURL = url
+                showingExportSuccess = true
+            case .failure(let error):
+                print("Export failed: \(error)")
             }
         }
     }
@@ -239,185 +232,64 @@ struct LogEntryView: View {
             HStack {
                 Text(entry.level.icon)
                     .font(.caption)
-                
-                Text(entry.level.rawValue)
-                    .font(.caption)
-                    .fontWeight(.medium)
                     .foregroundColor(entry.level.color)
                 
-                Text(entry.component.rawValue)
+                Text(entry.timestamp, style: .time)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                Spacer()
-                
-                Text(entry.formattedTimestamp)
-                    .font(.caption2)
+                Text("[\(entry.component.rawValue)]")
+                    .font(.caption)
                     .foregroundColor(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color(NSColor.systemGray5))
+                    .cornerRadius(4)
+                
+                Spacer()
             }
             
             Text(entry.message)
                 .font(.caption)
                 .foregroundColor(.primary)
                 .lineLimit(nil)
-                .multilineTextAlignment(.leading)
         }
         .padding(8)
         .background(Color(NSColor.controlBackgroundColor))
         .cornerRadius(6)
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(entry.level.color.opacity(0.3), lineWidth: 1)
-        )
     }
 }
 
-struct ExportLogsView: View {
-    @ObservedObject var logManager: LogManager
-    let filteredLogs: [LogEntry]
-    let onExport: (URL?) -> Void
+struct LogExportDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.plainText] }
     
-    @Environment(\.dismiss) private var dismiss
-    @State private var exportAllLogs = false
-    @State private var includeTimestamp = true
-    @State private var includeLevel = true
-    @State private var includeComponent = true
-    @State private var isExporting = false
+    let logs: [LogEntry]
     
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Экспорт логов")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            VStack(alignment: .leading, spacing: 16) {
-                // Настройки экспорта
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Настройки экспорта")
-                        .font(.headline)
-                    
-                    Toggle("Экспортировать все логи (не только отфильтрованные)", isOn: $exportAllLogs)
-                    
-                    Divider()
-                    
-                    Text("Формат экспорта")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    Toggle("Включить временные метки", isOn: $includeTimestamp)
-                    Toggle("Включить уровни логирования", isOn: $includeLevel)
-                    Toggle("Включить компоненты", isOn: $includeComponent)
-                }
-                
-                Divider()
-                
-                // Предварительный просмотр
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Предварительный просмотр")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    
-                    Text("Будет экспортировано: \(exportAllLogs ? logManager.logs.count : filteredLogs.count) записей")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            
-            HStack {
-                Button("Отмена") {
-                    dismiss()
-                }
-                .buttonStyle(.bordered)
-                
-                Spacer()
-                
-                Button("Экспортировать") {
-                    exportLogs()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isExporting)
-                
-                if isExporting {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                }
-            }
-        }
-        .padding()
-        .frame(width: 400)
+    init(logs: [LogEntry]) {
+        self.logs = logs
     }
     
-    private func exportLogs() {
-        isExporting = true
+    init(configuration: ReadConfiguration) throws {
+        logs = []
+    }
+    
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        let logText = logs.reversed().map { entry in
+            "[\(entry.timestamp)] [\(entry.level.rawValue.uppercased())] [\(entry.component.rawValue)] \(entry.message)"
+        }.joined(separator: "\n")
         
-        DispatchQueue.global(qos: .userInitiated).async {
-            let logsToExport = exportAllLogs ? logManager.logs : filteredLogs
-            
-            let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-            let timestamp = formatter.string(from: Date())
-            
-            let filename = "WhiteNoise_Logs_\(timestamp).txt"
-            
-            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-                DispatchQueue.main.async {
-                    isExporting = false
-                    dismiss()
-                }
-                return
-            }
-            
-            let fileURL = documentsPath.appendingPathComponent(filename)
-            
-            var content = """
-            ========================================
-            WhiteNoise Log Export
-            Generated: \(formatter.string(from: Date()))
-            Total entries: \(logsToExport.count)
-            ========================================
-            
-            """
-            
-            for entry in logsToExport {
-                var line = ""
-                
-                if includeTimestamp {
-                    line += "[\(entry.formattedTimestamp)] "
-                }
-                
-                if includeLevel {
-                    line += "[\(entry.level.rawValue)] "
-                }
-                
-                if includeComponent {
-                    line += "[\(entry.component)] "
-                }
-                
-                line += entry.message
-                content += line + "\n"
-            }
-            
-            do {
-                try content.write(to: fileURL, atomically: true, encoding: .utf8)
-                
-                DispatchQueue.main.async {
-                    isExporting = false
-                    onExport(fileURL)
-                    dismiss()
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    isExporting = false
-                    dismiss()
-                }
-            }
-        }
+        let data = logText.data(using: .utf8) ?? Data()
+        return FileWrapper(regularFileWithContents: data)
+    }
+}
+
+extension Date {
+    func ISO8601String() -> String {
+        let formatter = ISO8601DateFormatter()
+        return formatter.string(from: self)
     }
 }
 
 #Preview {
     LogsView()
-} 
+}
