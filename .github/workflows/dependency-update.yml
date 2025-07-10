@@ -69,16 +69,7 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add Package.resolved
-        git commit -m "chore: update Swift Package Manager dependencies
-        
-        Auto-updated dependencies via GitHub Actions"
-        
-    - name: Push dependency updates
-      if: steps.check-updates.outputs.no_updates == 'false'
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+        git commit -m "chore: update Swift Package Manager dependencies" -m "Auto-updated dependencies via GitHub Actions"
         
     - name: Create Pull Request
       if: steps.check-updates.outputs.no_updates == 'false'
