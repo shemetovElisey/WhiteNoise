@@ -54,8 +54,8 @@ jobs:
           echo "⚠️  Warning: Potential hardcoded secrets found"
         fi
         
-        # Check for force unwrapping
-        if grep -r "!" WhiteNoise/ --include="*.swift" | grep -v "//"; then
+        # Check for force unwrapping - look for patterns like variable! or expression!
+        if grep -r -E "\w\s*![^=]" WhiteNoise/ --include="*.swift" | grep -v "//" | grep -v "!=" | grep -v "!isEmpty" | grep -v "!true" | grep -v "!false" | grep -v "!self" | grep -v "!super" | grep -v "!condition" | grep -v "!is" | grep -v "!has"; then
           echo "⚠️  Warning: Force unwrapping operators found"
         fi
         
