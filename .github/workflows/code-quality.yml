@@ -31,17 +31,17 @@ jobs:
       run: |
         swiftlint autocorrect
         
-    - name: Commit SwiftLint fixes
-      if: github.event_name == 'push'
+    - name: Commit and Push SwiftLint fixes (PR only)
+      if: github.event_name == 'pull_request'
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add -A
         git diff-index --quiet HEAD || git commit -m "Apply SwiftLint fixes"
         
-    - name: Push SwiftLint fixes
-      if: github.event_name == 'push'
-      uses: ad-m/github-push-action@master
+    - name: Push SwiftLint fixes (PR only)
+      if: github.event_name == 'pull_request'
+      uses: ad-m/github-push-action@v0.6.3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref_name }}
+        branch: ${{ github.head_ref }}
