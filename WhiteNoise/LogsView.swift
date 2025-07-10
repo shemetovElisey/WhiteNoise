@@ -154,7 +154,7 @@ struct LogsView: View {
                             Toggle("Включено", isOn: $logManager.isLoggingEnabled)
                                 .toggleStyle(SwitchToggleStyle())
                                 .scaleEffect(0.8)
-                                .onChange(of: logManager.isLoggingEnabled) { _ in
+                                .onChange(of: logManager.isLoggingEnabled, initial: true) { _, _ in
                                     logManager.saveSettings()
                                 }
                         }

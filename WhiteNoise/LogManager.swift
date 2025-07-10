@@ -52,7 +52,7 @@ enum LogLevel: String, CaseIterable, Codable {
 }
 
 struct LogEntry: Identifiable, Codable {
-    let id = UUID()
+    var id = UUID()
     let timestamp: Date
     let level: LogLevel
     let message: String

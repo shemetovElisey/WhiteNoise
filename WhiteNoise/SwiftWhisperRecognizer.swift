@@ -73,17 +73,13 @@ class SwiftWhisperRecognizer: NSObject {
             completion(.failure(SwiftWhisperRecognizerError.modelNotFound))
             return
         }
+        
         LogManager.shared.debug("Путь к модели: \(modelPath.path)", component: "SwiftWhisperRecognizer")
-        do {
-            whisper = try Whisper(fromFileURL: modelPath)
-            whisper?.delegate = self
-            isInitialized = true
-            LogManager.shared.info("SwiftWhisper успешно инициализирован", component: "SwiftWhisperRecognizer")
-            completion(.success(()))
-        } catch {
-            LogManager.shared.error("Ошибка инициализации SwiftWhisper: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
-            completion(.failure(error))
-        }
+        whisper = Whisper(fromFileURL: modelPath)
+        whisper?.delegate = self
+        isInitialized = true
+        LogManager.shared.info("SwiftWhisper успешно инициализирован", component: "SwiftWhisperRecognizer")
+        completion(.success(()))
     }
     
     private func performTranscription(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {

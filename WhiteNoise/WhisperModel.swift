@@ -163,10 +163,7 @@ struct WhisperModel: Identifiable, Hashable {
         if FileManager.default.fileExists(atPath: userModelPath.path) {
             return userModelPath
         }
-        // Если не найдено в sandbox, ищем в бандле
-        if let bundleURL = Bundle.main.url(forResource: "ggml-tiny", withExtension: "bin") {
-            return bundleURL
-        }
+        
         return nil
     }
 }
