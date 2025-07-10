@@ -1,0 +1,78 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-release:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+        
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Build for iOS
+      run: |
+        xcodebuild clean archive \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'generic/platform=iOS' \
+          -archivePath ./build/WhiteNoise.xcarchive \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Build for macOS
+      run: |
+        xcodebuild clean archive \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'generic/platform=macOS' \
+          -archivePath ./build/WhiteNoise-macOS.xcarchive \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Create IPA
+      run: |
+        xcodebuild -exportArchive \
+          -archivePath ./build/WhiteNoise.xcarchive \
+          -exportPath ./build/ipa \
+          -exportOptionsPlist exportOptions-dev.plist
+          
+    - name: Upload iOS build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: WhiteNoise-iOS-${{ github.ref_name }}
+        path: |
+          ./build/WhiteNoise.xcarchive
+          ./build/ipa/*.ipa
+          
+    - name: Upload macOS build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: WhiteNoise-macOS-${{ github.ref_name }}
+        path: ./build/WhiteNoise-macOS.xcarchive

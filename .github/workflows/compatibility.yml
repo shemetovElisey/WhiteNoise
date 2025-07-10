@@ -1,0 +1,63 @@
+name: Compatibility Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 3 * * 0' # Every Sunday at 3 AM
+
+jobs:
+  compatibility-test:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        ios-version: ['16.0', '17.0', '18.0']
+        device: ['iPhone 15', 'iPhone 14', 'iPhone 13']
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+        
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+          
+    - name: Build for iOS ${{ matrix.ios-version }}
+      run: |
+        xcodebuild clean build \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Test on iOS ${{ matrix.ios-version }}
+      run: |
+        xcodebuild test \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Upload compatibility test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: compatibility-test-${{ matrix.device }}-${{ matrix.ios-version }}
+        path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
