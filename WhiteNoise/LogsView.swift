@@ -28,7 +28,7 @@ import SwiftUI
 struct LogsView: View {
     @ObservedObject private var logManager = LogManager.shared
     @State private var selectedLevel: LogLevel? = nil
-    @State private var selectedComponent: String? = nil
+    @State private var selectedComponent: LogComponent? = nil
     @State private var searchText = ""
     @State private var showingExportSheet = false
     @State private var showingClearAlert = false
@@ -52,7 +52,7 @@ struct LogsView: View {
         if !searchText.isEmpty {
             logs = logs.filter { 
                 $0.message.localizedCaseInsensitiveContains(searchText) ||
-                $0.component.localizedCaseInsensitiveContains(searchText)
+                $0.component.rawValue.localizedCaseInsensitiveContains(searchText)
             }
         }
         
@@ -60,7 +60,7 @@ struct LogsView: View {
     }
     
     private var availableComponents: [String] {
-        Array(Set(logManager.logs.map { $0.component })).sorted()
+        Array(Set(logManager.logs.map { $0.component.rawValue })).sorted()
     }
     
     var body: some View {
@@ -245,7 +245,7 @@ struct LogEntryView: View {
                     .fontWeight(.medium)
                     .foregroundColor(entry.level.color)
                 
-                Text(entry.component)
+                Text(entry.component.rawValue)
                     .font(.caption)
                     .foregroundColor(.secondary)
                 

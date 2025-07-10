@@ -56,7 +56,7 @@ struct LogEntry: Identifiable, Codable {
     let timestamp: Date
     let level: LogLevel
     let message: String
-    let component: String
+    let component: LogComponent
     
     var formattedTimestamp: String {
         let formatter = DateFormatter()
@@ -65,8 +65,19 @@ struct LogEntry: Identifiable, Codable {
     }
     
     var formattedLog: String {
-        return "[\(formattedTimestamp)] [\(level.rawValue)] [\(component)] \(message)"
+        return "[\(formattedTimestamp)] [\(level.rawValue)] [\(component.rawValue)] \(message)"
     }
+}
+
+enum LogComponent: String, CaseIterable, Codable {
+    case app
+    case logManager
+    case contentView
+    case appDelegate
+    case speechManager
+    case voiceRecorder
+    case whisperModelManager
+    case swiftWhisperRecognizer
 }
 
 class LogManager: ObservableObject {
@@ -86,7 +97,7 @@ class LogManager: ObservableObject {
     
     // MARK: - Public Methods
     
-    func log(_ message: String, level: LogLevel = .info, component: String = "App") {
+    func log(_ message: String, level: LogLevel = .info, component: LogComponent = .app) {
         guard isLoggingEnabled else { return }
         
         let entry = LogEntry(timestamp: Date(), level: level, message: message, component: component)
@@ -104,19 +115,19 @@ class LogManager: ObservableObject {
         print("[\(entry.formattedTimestamp)] [\(level.rawValue)] [\(component)] \(message)")
     }
     
-    func debug(_ message: String, component: String = "App") {
+    func debug(_ message: String, component: LogComponent = .app) {
         log(message, level: .debug, component: component)
     }
     
-    func info(_ message: String, component: String = "App") {
+    func info(_ message: String, component: LogComponent = .app) {
         log(message, level: .info, component: component)
     }
     
-    func warning(_ message: String, component: String = "App") {
+    func warning(_ message: String, component: LogComponent = .app) {
         log(message, level: .warning, component: component)
     }
     
-    func error(_ message: String, component: String = "App") {
+    func error(_ message: String, component: LogComponent = .app) {
         log(message, level: .error, component: component)
     }
     
@@ -142,10 +153,7 @@ class LogManager: ObservableObject {
     
     func exportLogsToFile() -> URL? {
         let content = exportLogs()
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-        let timestamp = formatter.string(from: Date())
+        let timestamp = dateFormatter.string(from: Date())
         
         let filename = "WhiteNoise_Logs_\(timestamp).txt"
         
@@ -159,7 +167,7 @@ class LogManager: ObservableObject {
             try content.write(to: fileURL, atomically: true, encoding: .utf8)
             return fileURL
         } catch {
-            self.error("Failed to export logs to file: \(error.localizedDescription)", component: "LogManager")
+            self.error("Failed to export logs to file: \(error.localizedDescription)", component: .logManager)
             return nil
         }
     }
@@ -168,7 +176,7 @@ class LogManager: ObservableObject {
         return logs.filter { $0.level == level }
     }
     
-    func getLogsByComponent(_ component: String) -> [LogEntry] {
+    func getLogsByComponent(_ component: LogComponent) -> [LogEntry] {
         return logs.filter { $0.component == component }
     }
     

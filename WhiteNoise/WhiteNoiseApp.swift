@@ -48,7 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Инициализируем систему логов
-        LogManager.shared.info("Приложение запущено", component: "AppDelegate")
+        LogManager.shared.info("Приложение запущено", component: .appDelegate)
         
         // Не скрываем приложение из Dock, чтобы окно отображалось
         // NSApp.setActivationPolicy(.accessory)
@@ -74,22 +74,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Подписываемся на уведомления об изменении состояния записи
         NotificationCenter.default.addObserver(self, selector: #selector(recordingStateChanged), name: .recordingStateChanged, object: nil)
         
-        LogManager.shared.info("Инициализация приложения завершена", component: "AppDelegate")
+        LogManager.shared.info("Инициализация приложения завершена", component: .appDelegate)
     }
     
     func applicationWillTerminate(_ notification: Notification) {
-        LogManager.shared.info("Приложение завершается", component: "AppDelegate")
+        LogManager.shared.info("Приложение завершается", component: .appDelegate)
         
         // Очищаем глобальный мониторинг при завершении
         if let monitor = globalMonitor {
             NSEvent.removeMonitor(monitor)
-            LogManager.shared.debug("Глобальный мониторинг удален при завершении", component: "AppDelegate")
+            LogManager.shared.debug("Глобальный мониторинг удален при завершении", component: .appDelegate)
         }
         
         // Очищаем Carbon Hot Key
         if let hotKeyRef = carbonHotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
-            LogManager.shared.debug("Carbon Hot Key удален при завершении", component: "AppDelegate")
+            LogManager.shared.debug("Carbon Hot Key удален при завершении", component: .appDelegate)
         }
     }
     
@@ -97,9 +97,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             DispatchQueue.main.async {
                 if granted {
-                    LogManager.shared.info("Разрешения на уведомления получены", component: "AppDelegate")
+                    LogManager.shared.info("Разрешения на уведомления получены", component: .appDelegate)
                 } else {
-                    LogManager.shared.warning("Разрешения на уведомления не получены: \(error?.localizedDescription ?? "неизвестная ошибка")", component: "AppDelegate")
+                    LogManager.shared.warning("Разрешения на уведомления не получены: \(error?.localizedDescription ?? "неизвестная ошибка")", component: .appDelegate)
                 }
             }
         }
@@ -149,7 +149,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // В sandbox режиме глобальные мониторинги могут не работать
         // Поэтому используем только локальные мониторинги и меню
         
-        LogManager.shared.info("Регистрация шорткатов...", component: "AppDelegate")
+        LogManager.shared.info("Регистрация шорткатов...", component: .appDelegate)
         
         // Регистрируем локальный мониторинг
         registerLocalShortcut()
@@ -165,9 +165,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
         
         if globalMonitor != nil {
-            LogManager.shared.info("Глобальный шорткат Cmd+Shift+V зарегистрирован успешно", component: "AppDelegate")
+            LogManager.shared.info("Глобальный шорткат Cmd+Shift+V зарегистрирован успешно", component: .appDelegate)
         } else {
-            LogManager.shared.warning("Глобальный мониторинг недоступен (sandbox ограничения)", component: "AppDelegate")
+            LogManager.shared.warning("Глобальный мониторинг недоступен (sandbox ограничения)", component: .appDelegate)
         }
         
         // Пытаемся зарегистрировать Carbon Hot Key как дополнительный вариант
@@ -176,7 +176,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Устанавливаем обработчик событий Carbon
         setupCarbonEventHandler()
         
-        LogManager.shared.info("Шорткаты зарегистрированы. Используйте меню в строке состояния как альтернативу.", component: "AppDelegate")
+        LogManager.shared.info("Шорткаты зарегистрированы. Используйте меню в строке состояния как альтернативу.", component: .appDelegate)
     }
     
     func registerLocalShortcut() {
@@ -190,7 +190,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             }
             return event
         }
-        LogManager.shared.info("Локальный шорткат Cmd+Shift+V зарегистрирован", component: "AppDelegate")
+        LogManager.shared.info("Локальный шорткат Cmd+Shift+V зарегистрирован", component: .appDelegate)
     }
     
     func registerCarbonHotKey() {
@@ -208,9 +208,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         )
         
         if status == noErr {
-            LogManager.shared.info("Carbon Hot Key Cmd+Shift+V зарегистрирован успешно", component: "AppDelegate")
+            LogManager.shared.info("Carbon Hot Key Cmd+Shift+V зарегистрирован успешно", component: .appDelegate)
         } else {
-            LogManager.shared.error("Ошибка регистрации Carbon Hot Key: \(status)", component: "AppDelegate")
+            LogManager.shared.error("Ошибка регистрации Carbon Hot Key: \(status)", component: .appDelegate)
         }
     }
     
@@ -250,14 +250,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         )
         
         if status == noErr {
-            LogManager.shared.info("Carbon Event Handler установлен успешно", component: "AppDelegate")
+            LogManager.shared.info("Carbon Event Handler установлен успешно", component: .appDelegate)
         } else {
-            LogManager.shared.error("Ошибка установки Carbon Event Handler: \(status)", component: "AppDelegate")
+            LogManager.shared.error("Ошибка установки Carbon Event Handler: \(status)", component: .appDelegate)
         }
     }
     
     @objc func toggleRecording() {
-        LogManager.shared.info("toggleRecording вызван - шорткат работает!", component: "AppDelegate")
+        LogManager.shared.info("toggleRecording вызван - шорткат работает!", component: .appDelegate)
         
         if voiceRecorder?.isRecording == true {
             stopRecording()
@@ -267,14 +267,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
     
     @objc func startRecording() {
-        LogManager.shared.info("Начало записи", component: "AppDelegate")
+        LogManager.shared.info("Начало записи", component: .appDelegate)
         voiceRecorder?.startRecording()
         updateStatusBarIcon(recording: true)
         updateMenu()
     }
     
     @objc func stopRecording() {
-        LogManager.shared.info("Остановка записи", component: "AppDelegate")
+        LogManager.shared.info("Остановка записи", component: .appDelegate)
         voiceRecorder?.stopRecording()
         updateStatusBarIcon(recording: false)
         updateMenu()
@@ -311,13 +311,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         // Очищаем глобальный мониторинг
         if let monitor = globalMonitor {
             NSEvent.removeMonitor(monitor)
-            LogManager.shared.debug("Глобальный мониторинг удален", component: "AppDelegate")
+            LogManager.shared.debug("Глобальный мониторинг удален", component: .appDelegate)
         }
         
         // Очищаем Carbon Hot Key
         if let hotKeyRef = carbonHotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
-            LogManager.shared.debug("Carbon Hot Key удален", component: "AppDelegate")
+            LogManager.shared.debug("Carbon Hot Key удален", component: .appDelegate)
         }
         
         NSApplication.shared.terminate(nil)
@@ -350,7 +350,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                         self.showNotification(title: "WhiteNoise", message: "Текст вставлен: \(text.prefix(30))...")
                     } else {
                         self.showNotification(title: "WhiteNoise - Ошибка", message: "Не удалось вставить текст. Используйте Cmd+V вручную.")
-                        LogManager.shared.error("Ошибка вставки: \(output)", component: "AppDelegate")
+                        LogManager.shared.error("Ошибка вставки: \(output)", component: .appDelegate)
                     }
                 }
             }
@@ -377,7 +377,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: "AppDelegate")
+                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: .appDelegate)
             }
         }
     }

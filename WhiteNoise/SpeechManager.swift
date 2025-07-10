@@ -55,11 +55,11 @@ class SpeechManager {
     }
     
     private func transcribeWithLocal(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        LogManager.shared.info("Вызван transcribeWithLocal для файла: \(fileURL.path)", component: "SpeechManager")
+        LogManager.shared.info("Вызван transcribeWithLocal для файла: \(fileURL.path)", component: .speechManager)
         
         // Проверяем, что файл существует
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            LogManager.shared.error("Файл не найден: \(fileURL.path)", component: "SpeechManager")
+            LogManager.shared.error("Файл не найден: \(fileURL.path)", component: .speechManager)
             completion(.failure(SpeechManagerError.fileNotFound))
             return
         }
@@ -68,15 +68,15 @@ class SpeechManager {
         do {
             let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
             let fileSize = attributes[.size] as? UInt64 ?? 0
-            LogManager.shared.info("Размер файла: \(fileSize) байт", component: "SpeechManager")
+            LogManager.shared.info("Размер файла: \(fileSize) байт", component: .speechManager)
             
             if fileSize == 0 {
-                LogManager.shared.warning("Файл пустой!", component: "SpeechManager")
+                LogManager.shared.warning("Файл пустой!", component: .speechManager)
                 completion(.failure(SpeechManagerError.emptyFile))
                 return
             }
         } catch {
-            LogManager.shared.error("Ошибка получения атрибутов файла: \(error.localizedDescription)", component: "SpeechManager")
+            LogManager.shared.error("Ошибка получения атрибутов файла: \(error.localizedDescription)", component: .speechManager)
             completion(.failure(error))
             return
         }
@@ -85,19 +85,19 @@ class SpeechManager {
         swiftWhisperRecognizer.transcribeAudio(fileURL: fileURL) { [weak self] result in
             switch result {
             case .success(let text):
-                LogManager.shared.info("SwiftWhisper успешно вернул текст: '\(text)'", component: "SpeechManager")
-                LogManager.shared.info("Вставляем текст в активное приложение...", component: "SpeechManager")
+                LogManager.shared.info("SwiftWhisper успешно вернул текст: '\(text)'", component: .speechManager)
+                LogManager.shared.info("Вставляем текст в активное приложение...", component: .speechManager)
                 self?.insertTextToFrontmostApp(text)
                 completion(.success(text))
             case .failure(let error):
-                LogManager.shared.error("Ошибка SwiftWhisper распознавания: \(error.localizedDescription)", component: "SpeechManager")
+                LogManager.shared.error("Ошибка SwiftWhisper распознавания: \(error.localizedDescription)", component: .speechManager)
                 completion(.failure(error))
             }
         }
     }
     
     private func insertTextToFrontmostApp(_ text: String) {
-        LogManager.shared.info("Копируем текст в буфер обмена вместо вставки: \'\(text)\'", component: "SpeechManager")
+        LogManager.shared.info("Копируем текст в буфер обмена вместо вставки: \'\(text)\'", component: .speechManager)
         
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -119,9 +119,9 @@ class SpeechManager {
         let request = UNNotificationRequest(identifier: "recognition_complete_\(UUID().uuidString)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: "SpeechManager")
+                LogManager.shared.error("Ошибка отправки уведомления: \(error.localizedDescription)", component: .speechManager)
             } else {
-                LogManager.shared.info("Уведомление о завершении распознавания отправлено", component: "SpeechManager")
+                LogManager.shared.info("Уведомление о завершении распознавания отправлено", component: .speechManager)
             }
         }
     }
@@ -137,7 +137,7 @@ class SpeechManager {
     
     func setRecognitionMode(_ mode: RecognitionMode) {
         // Игнорируем, так как у нас только один режим
-        LogManager.shared.info("Попытка установить режим \(mode), но используется только локальный режим", component: "SpeechManager")
+        LogManager.shared.info("Попытка установить режим \(mode), но используется только локальный режим", component: .speechManager)
     }
     
     func getCurrentMode() -> RecognitionMode {
@@ -147,14 +147,7 @@ class SpeechManager {
     func isLocalModelAvailable() -> Bool {
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
         let sandboxPath = WhisperModel.modelsDirectory().appendingPathComponent(modelName)
-        if FileManager.default.fileExists(atPath: sandboxPath.path) {
-            return true
-        }
-        // Проверяем наличие встроенной tiny-модели в бандле
-        if let _ = Bundle.main.url(forResource: "ggml-tiny", withExtension: "bin") {
-            return true
-        }
-        return false
+        return FileManager.default.fileExists(atPath: sandboxPath.path)
     }
     
     func getAvailableModes() -> [RecognitionMode] {

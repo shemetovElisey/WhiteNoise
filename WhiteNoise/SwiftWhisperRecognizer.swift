@@ -38,11 +38,11 @@ class SwiftWhisperRecognizer: NSObject {
     
     override init() {
         super.init()
-        LogManager.shared.info("SwiftWhisperRecognizer инициализирован", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("SwiftWhisperRecognizer инициализирован", component: .swiftWhisperRecognizer)
     }
     
     func transcribeAudio(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        LogManager.shared.info("Начинаем транскрипцию файла: \(fileURL.path)", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("Начинаем транскрипцию файла: \(fileURL.path)", component: .swiftWhisperRecognizer)
         
         // Инициализируем SwiftWhisper если еще не инициализирован
         if !isInitialized {
@@ -60,7 +60,7 @@ class SwiftWhisperRecognizer: NSObject {
     }
     
     private func initializeSwiftWhisper(completion: @escaping (Result<Void, Error>) -> Void) {
-        LogManager.shared.info("Инициализируем SwiftWhisper...", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("Инициализируем SwiftWhisper...", component: .swiftWhisperRecognizer)
         
         // Получаем выбранную модель
         let modelName = UserDefaults.standard.string(forKey: "WhisperModelName") ?? WhisperModel.getDefaultModel().filename
@@ -69,31 +69,31 @@ class SwiftWhisperRecognizer: NSObject {
             return
         }
         guard let modelPath = WhisperModel.getLocalModelURL(for: model) else {
-            LogManager.shared.error("Модель не найдена ни в Documents, ни в бандле", component: "SwiftWhisperRecognizer")
+            LogManager.shared.error("Модель не найдена ни в Documents, ни в бандле", component: .swiftWhisperRecognizer)
             completion(.failure(SwiftWhisperRecognizerError.modelNotFound))
             return
         }
         
-        LogManager.shared.debug("Путь к модели: \(modelPath.path)", component: "SwiftWhisperRecognizer")
+        LogManager.shared.debug("Путь к модели: \(modelPath.path)", component: .swiftWhisperRecognizer)
         whisper = Whisper(fromFileURL: modelPath)
         whisper?.delegate = self
         isInitialized = true
-        LogManager.shared.info("SwiftWhisper успешно инициализирован", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("SwiftWhisper успешно инициализирован", component: .swiftWhisperRecognizer)
         completion(.success(()))
     }
     
     private func performTranscription(fileURL: URL, completion: @escaping (Result<String, Error>) -> Void) {
-        LogManager.shared.info("Выполняем транскрипцию файла: \(fileURL.path)", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("Выполняем транскрипцию файла: \(fileURL.path)", component: .swiftWhisperRecognizer)
         
         guard let whisper = whisper else {
-            LogManager.shared.error("SwiftWhisper не инициализирован", component: "SwiftWhisperRecognizer")
+            LogManager.shared.error("SwiftWhisper не инициализирован", component: .swiftWhisperRecognizer)
             completion(.failure(SwiftWhisperRecognizerError.notInitialized))
             return
         }
         
         // Проверяем, что файл существует
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            LogManager.shared.error("Файл не существует: \(fileURL.path)", component: "SwiftWhisperRecognizer")
+            LogManager.shared.error("Файл не существует: \(fileURL.path)", component: .swiftWhisperRecognizer)
             completion(.failure(SwiftWhisperRecognizerError.fileNotFound))
             return
         }
@@ -102,40 +102,40 @@ class SwiftWhisperRecognizer: NSObject {
         convertAudioToPCM(fileURL: fileURL) { [weak self] result in
             switch result {
             case .success(let audioFrames):
-                LogManager.shared.info("Аудио конвертировано в PCM, начинаем транскрипцию...", component: "SwiftWhisperRecognizer")
+                LogManager.shared.info("Аудио конвертировано в PCM, начинаем транскрипцию...", component: .swiftWhisperRecognizer)
                 
                 Task {
                     do {
                         let segments = try await whisper.transcribe(audioFrames: audioFrames)
                         
-                        LogManager.shared.info("SwiftWhisper транскрипция завершена", component: "SwiftWhisperRecognizer")
+                        LogManager.shared.info("SwiftWhisper транскрипция завершена", component: .swiftWhisperRecognizer)
                         
                         // Извлекаем текст из сегментов
                         let transcribedText = segments.map { $0.text }.joined(separator: " ")
                         let punctuatedText = self?.addPunctuation(to: transcribedText) ?? transcribedText
                         
-                        LogManager.shared.info("Результат распознавания: '\(punctuatedText)' (длина: \(punctuatedText.count))", component: "SwiftWhisperRecognizer")
+                        LogManager.shared.info("Результат распознавания: '\(punctuatedText)' (длина: \(punctuatedText.count))", component: .swiftWhisperRecognizer)
                         
                         completion(.success(punctuatedText))
                     } catch {
-                        LogManager.shared.error("Ошибка транскрипции SwiftWhisper: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
+                        LogManager.shared.error("Ошибка транскрипции SwiftWhisper: \(error.localizedDescription)", component: .swiftWhisperRecognizer)
                         completion(.failure(error))
                     }
                 }
             case .failure(let error):
-                LogManager.shared.error("Ошибка конвертации аудио: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
+                LogManager.shared.error("Ошибка конвертации аудио: \(error.localizedDescription)", component: .swiftWhisperRecognizer)
                 completion(.failure(error))
             }
         }
     }
     
     private func convertAudioToPCM(fileURL: URL, completion: @escaping (Result<[Float], Error>) -> Void) {
-        LogManager.shared.info("Конвертируем аудио в 16kHz PCM...", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("Конвертируем аудио в 16kHz PCM...", component: .swiftWhisperRecognizer)
         
         let asset = AVURLAsset(url: fileURL)
         asset.loadTracks(withMediaType: .audio) { tracks, error in
             guard let track = tracks?.first else {
-                LogManager.shared.error("Нет аудиотреков в файле: \(fileURL.path)", component: "SwiftWhisperRecognizer")
+                LogManager.shared.error("Нет аудиотреков в файле: \(fileURL.path)", component: .swiftWhisperRecognizer)
                 completion(.failure(SwiftWhisperRecognizerError.conversionFailed))
                 return
             }
@@ -165,7 +165,7 @@ class SwiftWhisperRecognizer: NSObject {
                 
                 let readerStarted = reader.startReading()
                 if !readerStarted {
-                    LogManager.shared.error("Ошибка запуска reader: \(String(describing: reader.error))", component: "SwiftWhisperRecognizer")
+                    LogManager.shared.error("Ошибка запуска reader: \(String(describing: reader.error))", component: .swiftWhisperRecognizer)
                     completion(.failure(SwiftWhisperRecognizerError.conversionFailed))
                     return
                 }
@@ -194,14 +194,14 @@ class SwiftWhisperRecognizer: NSObject {
                                             }
                                         }
                                         
-                                        LogManager.shared.info("Аудио успешно конвертировано в PCM, \(floats.count) фреймов", component: "SwiftWhisperRecognizer")
+                                        LogManager.shared.info("Аудио успешно конвертировано в PCM, \(floats.count) фреймов", component: .swiftWhisperRecognizer)
                                         completion(.success(floats))
                                     } catch {
-                                        LogManager.shared.error("Ошибка чтения WAV файла: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
+                                        LogManager.shared.error("Ошибка чтения WAV файла: \(error.localizedDescription)", component: .swiftWhisperRecognizer)
                                         completion(.failure(error))
                                     }
                                 } else {
-                                    LogManager.shared.error("Ошибка завершения writer: \(String(describing: writer.error))", component: "SwiftWhisperRecognizer")
+                                    LogManager.shared.error("Ошибка завершения writer: \(String(describing: writer.error))", component: .swiftWhisperRecognizer)
                                     completion(.failure(SwiftWhisperRecognizerError.conversionFailed))
                                 }
                             }
@@ -210,7 +210,7 @@ class SwiftWhisperRecognizer: NSObject {
                     }
                 }
             } catch {
-                LogManager.shared.error("Ошибка конвертации: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
+                LogManager.shared.error("Ошибка конвертации: \(error.localizedDescription)", component: .swiftWhisperRecognizer)
                 completion(.failure(error))
             }
         }
@@ -239,20 +239,20 @@ class SwiftWhisperRecognizer: NSObject {
 // MARK: - WhisperDelegate
 extension SwiftWhisperRecognizer: WhisperDelegate {
     func whisper(_ aWhisper: Whisper, didUpdateProgress progress: Double) {
-        LogManager.shared.debug("Прогресс транскрипции: \(Int(progress * 100))%", component: "SwiftWhisperRecognizer")
+        LogManager.shared.debug("Прогресс транскрипции: \(Int(progress * 100))%", component: .swiftWhisperRecognizer)
     }
     
     func whisper(_ aWhisper: Whisper, didProcessNewSegments segments: [Segment], atIndex index: Int) {
         let newText = segments.map { $0.text }.joined(separator: " ")
-        LogManager.shared.debug("Новые сегменты: '\(newText)'", component: "SwiftWhisperRecognizer")
+        LogManager.shared.debug("Новые сегменты: '\(newText)'", component: .swiftWhisperRecognizer)
     }
     
     func whisper(_ aWhisper: Whisper, didCompleteWithSegments segments: [Segment]) {
-        LogManager.shared.info("Транскрипция завершена, всего сегментов: \(segments.count)", component: "SwiftWhisperRecognizer")
+        LogManager.shared.info("Транскрипция завершена, всего сегментов: \(segments.count)", component: .swiftWhisperRecognizer)
     }
     
     func whisper(_ aWhisper: Whisper, didErrorWith error: Error) {
-        LogManager.shared.error("Ошибка SwiftWhisper: \(error.localizedDescription)", component: "SwiftWhisperRecognizer")
+        LogManager.shared.error("Ошибка SwiftWhisper: \(error.localizedDescription)", component: .swiftWhisperRecognizer)
     }
 }
 
