@@ -13,8 +13,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        ios-version: ['16.0', '17.0', '18.0']
-        device: ['iPhone 15', 'iPhone 14', 'iPhone 13']
+        macos-version: ['15.0', '16.0', '17.0']
         
     steps:
     - name: Checkout code
@@ -33,23 +32,23 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-
           
-    - name: Build for iOS ${{ matrix.ios-version }}
+    - name: Build for macOS ${{ matrix.macos-version }}
       run: |
         xcodebuild clean build \
           -project WhiteNoise.xcodeproj \
           -scheme WhiteNoise \
-          -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' \
+          -destination 'platform=macOS,OS=${{ matrix.macos-version }}' \
           -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
           
-    - name: Test on iOS ${{ matrix.ios-version }}
+    - name: Test on macOS ${{ matrix.macos-version }}
       run: |
         xcodebuild test \
           -project WhiteNoise.xcodeproj \
           -scheme WhiteNoise \
-          -destination 'platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios-version }}' \
+          -destination 'platform=macOS,OS=${{ matrix.macos-version }}' \
           -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
@@ -59,5 +58,5 @@ jobs:
       uses: actions/upload-artifact@v3
       if: always()
       with:
-        name: compatibility-test-${{ matrix.device }}-${{ matrix.ios-version }}
+        name: compatibility-test-macos-${{ matrix.macos-version }}
         path: ~/Library/Developer/Xcode/DerivedData/*/Logs/Test/*.xcresult
