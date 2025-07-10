@@ -12,6 +12,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Generate changelog
       id: changelog
@@ -20,19 +22,24 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         
-        # Generate changelog from commits
-        CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+        # Check if this is the first release (no previous tags)
+        if git describe --tags --abbrev=0 HEAD^ 2>/dev/null; then
+          # Generate changelog from commits since last tag
+          CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+        else
+          # First release - get all commits
+          CHANGELOG=$(git log --pretty=format:"- %s" HEAD)
+        fi
+        
         echo "changelog<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGELOG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
         
     - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ steps.changelog.outputs.version }}
-        release_name: WhiteNoise ${{ steps.changelog.outputs.version }}
+        name: WhiteNoise ${{ steps.changelog.outputs.version }}
         body: |
           ## Что нового в версии ${{ steps.changelog.outputs.version }}
           
@@ -53,3 +60,5 @@ jobs:
           Подробности в [CHANGELOG.md](CHANGELOG.md)
         draft: false
         prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
