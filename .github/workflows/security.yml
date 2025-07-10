@@ -1,0 +1,62 @@
+name: Security Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 2 * * 1' # Every Monday at 2 AM
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: swift
+        
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        args: --only-verified --format json
+      continue-on-error: true
+      
+    - name: Run Swift Security Check
+      run: |
+        # Check for common security issues in Swift code
+        echo "Checking for security issues in Swift code..."
+        
+        # Check for hardcoded secrets
+        if grep -r "password\|secret\|key\|token" WhiteNoise/ --include="*.swift" | grep -v "//"; then
+          echo "⚠️  Warning: Potential hardcoded secrets found"
+        fi
+        
+        # Check for force unwrapping
+        if grep -r "!" WhiteNoise/ --include="*.swift" | grep -v "//"; then
+          echo "⚠️  Warning: Force unwrapping operators found"
+        fi
+        
+        echo "Security check completed"

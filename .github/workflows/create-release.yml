@@ -1,0 +1,55 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Extract version from tag
+        VERSION=${GITHUB_REF#refs/tags/}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        
+        # Generate changelog from commits
+        CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.changelog.outputs.version }}
+        release_name: WhiteNoise ${{ steps.changelog.outputs.version }}
+        body: |
+          ## Что нового в версии ${{ steps.changelog.outputs.version }}
+          
+          ${{ steps.changelog.outputs.changelog }}
+          
+          ## Скачать
+          
+          Скачайте готовые сборки из артефактов релиза.
+          
+          ## Установка
+          
+          1. Скачайте .ipa файл для iOS
+          2. Установите через AltStore или TestFlight
+          3. Для macOS скачайте .app файл
+          
+          ## Изменения
+          
+          Подробности в [CHANGELOG.md](CHANGELOG.md)
+        draft: false
+        prerelease: false

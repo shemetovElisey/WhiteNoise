@@ -1,0 +1,107 @@
+name: Dependency Update
+
+on:
+  schedule:
+    - cron: '0 4 * * 1' # Every Monday at 4 AM
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.0'
+        
+    - name: Update Swift Package Manager dependencies
+      run: |
+        # Update all dependencies
+        xcodebuild -resolvePackageDependencies \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise
+          
+    - name: Check for updates
+      id: check-updates
+      run: |
+        # Check if there are any changes
+        if git diff --quiet Package.resolved; then
+          echo "no_updates=true" >> $GITHUB_OUTPUT
+          echo "No dependency updates found"
+        else
+          echo "no_updates=false" >> $GITHUB_OUTPUT
+          echo "Dependency updates found"
+        fi
+        
+    - name: Build with updated dependencies
+      if: steps.check-updates.outputs.no_updates == 'false'
+      run: |
+        xcodebuild clean build \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Test with updated dependencies
+      if: steps.check-updates.outputs.no_updates == 'false'
+      run: |
+        xcodebuild test \
+          -project WhiteNoise.xcodeproj \
+          -scheme WhiteNoise \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+          -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Commit dependency updates
+      if: steps.check-updates.outputs.no_updates == 'false'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add Package.resolved
+        git commit -m "chore: update Swift Package Manager dependencies
+        
+        Auto-updated dependencies via GitHub Actions"
+        
+    - name: Push dependency updates
+      if: steps.check-updates.outputs.no_updates == 'false'
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+        
+    - name: Create Pull Request
+      if: steps.check-updates.outputs.no_updates == 'false'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: dependency-update-${{ github.run_id }}
+        title: "chore: update dependencies"
+        body: |
+          ## 🔄 Автоматическое обновление зависимостей
+          
+          Этот PR содержит автоматические обновления зависимостей Swift Package Manager.
+          
+          ### Что изменилось:
+          - Обновлены версии пакетов в `Package.resolved`
+          
+          ### Проверки:
+          - ✅ Сборка проекта прошла успешно
+          - ✅ Тесты прошли успешно
+          
+          ### Действия:
+          - [ ] Проверить изменения в зависимостях
+          - [ ] Протестировать функциональность
+          - [ ] Одобрить и объединить
+        commit-message: "chore: update dependencies"
+        delete-branch: true
