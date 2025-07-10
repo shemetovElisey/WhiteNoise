@@ -31,7 +31,7 @@ jobs:
       id: check-updates
       run: |
         # Check if there are any changes
-        if git diff --quiet Package.resolved; then
+        if git diff --quiet WhiteNoise.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved; then
           echo "no_updates=true" >> $GITHUB_OUTPUT
           echo "No dependency updates found"
         else
@@ -68,7 +68,7 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add Package.resolved
+        git add WhiteNoise.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
         git commit -m "chore: update Swift Package Manager dependencies" -m "Auto-updated dependencies via GitHub Actions"
         
     - name: Create Pull Request
@@ -84,7 +84,7 @@ jobs:
           Этот PR содержит автоматические обновления зависимостей Swift Package Manager.
           
           ### Что изменилось:
-          - Обновлены версии пакетов в `Package.resolved`
+          - Обновлены версии пакетов в `WhiteNoise.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`
           
           ### Проверки:
           - ✅ Сборка проекта прошла успешно
