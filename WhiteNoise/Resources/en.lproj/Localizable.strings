@@ -1,0 +1,95 @@
+// AppDelegate
+"app_started" = "Application started";
+"app_initialization_completed" = "Application initialization completed";
+"app_terminating" = "Application terminating";
+"global_monitor_removed" = "Global monitor removed on termination";
+"carbon_hotkey_removed" = "Carbon Hot Key removed on termination";
+"notification_permissions_granted" = "Notification permissions granted";
+"notification_permissions_denied" = "Notification permissions denied: %@";
+"unknown_error" = "unknown error";
+"stop_recording" = "Stop Recording";
+"start_recording" = "Start Recording";
+"paste_from_clipboard" = "Paste from Clipboard";
+"settings" = "Settings";
+"quit" = "Quit";
+"registering_shortcuts" = "Registering shortcuts...";
+"global_shortcut_registered" = "Global shortcut Cmd+Shift+V registered successfully";
+"global_monitor_unavailable" = "Global monitor unavailable (sandbox restrictions)";
+"shortcuts_registered" = "Shortcuts registered. Use the status bar menu as an alternative.";
+"local_shortcut_registered" = "Local shortcut Cmd+Shift+V registered";
+
+// ContentView
+"stop_recording_button" = "Stop Recording";
+"start_recording_button" = "Start Recording";
+"microphone_access_granted" = "Microphone access granted";
+"microphone_access_denied" = "Microphone access denied";
+"before_creating_audiorecorder" = "Before creating AVAudioRecorder";
+"audiorecorder_created" = "AVAudioRecorder created: %@";
+"after_record_call" = "After record() call, started: %@";
+"audiorecorder_failed" = "AVAudioRecorder failed to start recording. isRecording: %@";
+"audiorecorder_error" = "Error creating AVAudioRecorder: %@";
+"recording_stopped" = "Recording stopped";
+
+// SettingsView
+"voice_input_settings" = "Voice Input Settings";
+"current_model" = "Current Model";
+"no_models_installed" = "No models installed";
+"download_model" = "Download Model";
+"change" = "Change";
+"model_status" = "Model Status";
+"model_available" = "Model available";
+"model_unavailable" = "Model unavailable";
+"ensure_whisper_cli_installed" = "Make sure whisper-cli and the selected model are installed";
+"downloading_model" = "Downloading Model";
+"error" = "Error: %@";
+"instructions" = "Instructions";
+"instruction_1" = "• Press Cmd+Shift+V to start recording";
+"instruction_2" = "• Speak clearly into the microphone";
+"instruction_3" = "• Press Cmd+Shift+V again to stop";
+"instruction_4" = "• Recognized text will be copied to clipboard — paste it manually (Cmd+V)";
+"system_logs" = "System Logs";
+"view_export_logs" = "View and export system logs for troubleshooting";
+"open_logs" = "Open Logs";
+"about_app" = "About App";
+"app_version" = "WhiteNoise v1.0";
+"app_description" = "Speech recognition application";
+"used_libraries" = "Used Libraries:";
+"library_swiftwhisper" = "• SwiftWhisper - speech recognition";
+"library_whisper_cpp" = "• whisper.cpp - base library";
+"library_openai_whisper" = "• OpenAI Whisper - ML models";
+"license_mit" = "License: MIT";
+
+// LogsView
+"logs" = "Logs";
+"export_logs" = "Export Logs";
+"clear_logs" = "Clear Logs";
+"no_logs_available" = "Logs unavailable";
+"logs_exported" = "Logs exported to: %@";
+"export_failed" = "Log export failed: %@";
+"clear_logs_confirmation" = "Are you sure you want to clear all logs?";
+"clear" = "Clear";
+"cancel" = "Cancel";
+
+// WhisperModel
+"model_size" = "Size: %@";
+"model_downloading" = "Downloading...";
+"model_download_complete" = "Download complete";
+"model_download_failed" = "Download failed";
+"model_installing" = "Installing...";
+"model_install_complete" = "Installation complete";
+"model_install_failed" = "Installation failed";
+
+// SpeechManager
+"speech_recognition_started" = "Speech recognition started";
+"speech_recognition_completed" = "Speech recognition completed";
+"speech_recognition_failed" = "Speech recognition failed: %@";
+"text_copied_to_clipboard" = "Text copied to clipboard";
+
+// VoiceRecorder
+"recording_started" = "Recording started";
+"recording_stopped" = "Recording stopped";
+"recording_error" = "Recording error: %@";
+"audio_session_error" = "Audio session setup error: %@";
+"permission_denied" = "Microphone access denied";
+"recording_in_progress" = "Recording already in progress";
+"no_recording_in_progress" = "No recording in progress";

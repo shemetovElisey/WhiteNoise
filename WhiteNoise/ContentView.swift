@@ -32,7 +32,7 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            Button(isRecording ? "Stop Recording" : "Start Recording") {
+            Button(isRecording ? "stop_recording_button".localized : "start_recording_button".localized) {
                 if isRecording {
                     stopRecording()
                 } else {
@@ -53,18 +53,18 @@ struct ContentView: View {
                 AVCaptureDevice.requestAccess(for: .audio) { granted in
                     if granted {
                         startRecording()
-                        LogManager.shared.info("Доступ к микрофону разрешён", component: .contentView)
+                        LogManager.shared.info("microphone_access_granted".localized, component: .contentView)
                     } else {
-                        LogManager.shared.warning("Доступ к микрофону запрещён", component: .contentView)
+                        LogManager.shared.warning("microphone_access_denied".localized, component: .contentView)
                     }
                 }
             
             case .denied: // The user has previously denied access.
-            LogManager.shared.warning("Доступ к микрофону запрещён", component: .contentView)
+            LogManager.shared.warning("microphone_access_denied".localized, component: .contentView)
                 return
 
-
-            case .restricted:return
+            case .restricted:
+                return
         @unknown default:
             fatalError()
         }
@@ -80,22 +80,22 @@ struct ContentView: View {
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
         do {
-            LogManager.shared.debug("Перед созданием AVAudioRecorder", component: .contentView)
+            LogManager.shared.debug("before_creating_audiorecorder".localized, component: .contentView)
             ContentView.audioRecorder = try AVAudioRecorder(url: url, settings: settings)
-            LogManager.shared.debug("AVAudioRecorder создан: \(ContentView.audioRecorder != nil)", component: .contentView)
+            LogManager.shared.debug("audiorecorder_created".localized(with: String(ContentView.audioRecorder != nil)), component: .contentView)
             let started = ContentView.audioRecorder?.record() ?? false
-            LogManager.shared.debug("После вызова record(), started: \(started)", component: .contentView)
+            LogManager.shared.debug("after_record_call".localized(with: String(started)), component: .contentView)
             if !started {
-                LogManager.shared.error("AVAudioRecorder не смог начать запись. isRecording: \(ContentView.audioRecorder?.isRecording ?? false)", component: .contentView)
+                LogManager.shared.error("audiorecorder_failed".localized(with: String(ContentView.audioRecorder?.isRecording ?? false)), component: .contentView)
             }
         } catch {
-            LogManager.shared.error("Ошибка создания AVAudioRecorder: \(error)", component: .contentView)
+            LogManager.shared.error("audiorecorder_error".localized(with: String(describing: error)), component: .contentView)
         }
     }
     
     func stopRecording() {
         ContentView.audioRecorder?.stop()
-        LogManager.shared.info("Recording stopped", component: .contentView)
+        LogManager.shared.info("recording_stopped".localized, component: .contentView)
     }
 }
 
